@@ -2,328 +2,252 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>Deep Recovery Pad</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{
---bg:#0a0a0a;--fg:#e8e8e8;--dim:#444;--accent:#c8ff00;--accent2:#00e0ff;
---mono:'SF Mono','Fira Code','Consolas',monospace;
---thin:-apple-system,'Helvetica Neue','Inter',sans-serif;
-}
-html,body{height:100%;background:var(--bg);color:var(--fg);font-family:var(--thin);overflow:hidden;-webkit-tap-highlight-color:transparent}
-body{display:flex;align-items:center;justify-content:center;position:relative}
-body::before{content:'';position:fixed;inset:0;background:
-repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(255,255,255,.02) 59px,rgba(255,255,255,.02) 60px),
-repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(255,255,255,.02) 59px,rgba(255,255,255,.02) 60px);
-pointer-events:none;z-index:0}
-
-.device{width:100%;max-width:420px;padding:48px 28px;position:relative;z-index:1;min-height:100dvh;display:flex;flex-direction:column;justify-content:center}
-
-.label{font-family:var(--mono);font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--dim);line-height:1}
-.value{font-family:var(--mono);font-size:14px;color:var(--fg);line-height:1}
-
-/* Header */
-.header{text-align:center;margin-bottom:56px}
-.product-name{font-weight:200;font-size:28px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px}
-.product-sub{font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
-
-/* Status row */
-.status-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:48px}
-.status-dot{width:6px;height:6px;border-radius:50%;background:var(--dim);display:inline-block;margin-right:8px;vertical-align:middle}
-.status-dot.active{background:var(--accent);animation:pulse-dot 2s ease-in-out infinite}
-.status-dot.complete{background:var(--accent2);animation:none}
-@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* Body state */
-.body-state{text-align:center;margin-bottom:48px}
-.state-title{font-weight:200;font-size:42px;letter-spacing:.08em;margin-bottom:8px}
-.state-sub{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.15em;text-transform:uppercase}
-
-/* Metrics */
-.metrics{margin-bottom:48px}
-.metric{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-.metric:last-child{border-bottom:none}
-.metric-val{font-family:var(--mono);font-size:13px;text-align:right}
-.metric-val.degraded{color:#ff4444}
-.metric-val.improving{color:#ffaa00}
-.metric-val.optimal{color:var(--accent)}
-
-/* Progress module card */
-.module-card{border:1px solid rgba(255,255,255,.06);padding:20px;margin-bottom:48px;opacity:0;display:none}
-.module-card.visible{display:block}
-.module-name{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:12px}
-.module-progress{font-weight:200;font-size:36px;margin-bottom:6px}
-.module-desc{font-size:13px;color:var(--dim);font-weight:300;line-height:1.5}
-
-/* Progress bar */
-.progress-track{height:1px;background:rgba(255,255,255,.06);margin-bottom:48px;position:relative;display:none}
-.progress-fill{height:1px;background:var(--accent);width:0%;transition:width .3s}
-
-/* Buttons */
-.actions{text-align:center;margin-top:auto;padding-top:24px}
-.btn{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;background:none;border:1px solid rgba(255,255,255,.15);color:var(--fg);padding:16px 32px;cursor:pointer;transition:all .3s;-webkit-user-select:none;user-select:none;display:inline-block;min-width:200px;position:relative;overflow:hidden}
-.btn:active{background:rgba(255,255,255,.05)}
-.btn.primary{border-color:var(--accent);color:var(--accent)}
-.btn.primary:active{background:rgba(200,255,0,.05)}
-.btn+.btn{margin-top:12px}
-.btn.hidden{display:none}
-
-/* Depleted badge */
-.depleted{font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--accent2);text-transform:uppercase;text-align:center;margin-bottom:24px;opacity:0}
-
-/* Glow effect */
-.glow{position:fixed;top:50%;left:50%;width:300px;height:300px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(200,255,0,.03),transparent 70%);pointer-events:none;opacity:0;z-index:0}
-
-/* Breathing ring */
-.breath-ring{position:fixed;top:50%;left:50%;width:180px;height:180px;transform:translate(-50%,-50%);border-radius:50%;border:1px solid rgba(200,255,0,.06);pointer-events:none;opacity:0;z-index:0}
-.breath-ring.active{opacity:1;animation:breathe 6s ease-in-out infinite}
-.breath-ring:nth-child(2){width:240px;height:240px;animation-delay:-.5s;border-color:rgba(0,224,255,.04)}
-.breath-ring:nth-child(3){width:300px;height:300px;animation-delay:-1s;border-color:rgba(200,255,0,.03)}
-@keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6}50%{transform:translate(-50%,-50%) scale(1.15);opacity:.15}}
-
-/* Healing phrase */
-.heal-phrase{position:fixed;top:38%;left:50%;transform:translate(-50%,-50%);font-weight:200;font-size:15px;letter-spacing:.12em;color:rgba(255,255,255,.25);pointer-events:none;opacity:0;z-index:0;text-align:center;width:80%;transition:opacity 1.5s}
-
-/* Fade utility */
-.fade-out{opacity:0;transition:opacity .4s}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;color:#fff;-webkit-tap-highlight-color:transparent}
+canvas{position:fixed;top:0;left:0;z-index:0}
+#ui{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;display:flex;flex-direction:column}
+#top{display:flex;justify-content:space-between;align-items:flex-start;padding:28px 24px 0}
+#title{font-size:15px;font-weight:700;letter-spacing:3px;text-transform:uppercase}
+#dose{font-family:'SF Mono',SFMono-Regular,Menlo,monospace;font-size:12px;letter-spacing:2px;opacity:.7;text-align:right}
+#dose .label{font-size:10px;display:block;margin-bottom:2px;letter-spacing:3px}
+#center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center}
+#state-word{font-size:clamp(28px,7vw,52px);font-weight:200;letter-spacing:8px;text-transform:uppercase;opacity:.85;margin-bottom:40px;transition:opacity .6s}
+#buttons{display:flex;gap:16px;margin-top:40px;pointer-events:auto}
+#buttons button{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;padding:12px 32px;font-size:13px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;border-radius:40px;font-family:inherit;transition:all .3s}
+#buttons button:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.6)}
+#buttons button:active{transform:scale(.96)}
+.hidden{display:none!important}
 </style>
 </head>
 <body>
-<div class="glow" id="glow"></div>
-<div class="breath-ring" id="ring1"></div>
-<div class="breath-ring" id="ring2"></div>
-<div class="breath-ring" id="ring3"></div>
-<div class="heal-phrase" id="heal-phrase"></div>
-<div class="device" id="device">
-
-  <div class="header">
-    <div class="product-name">Deep Recovery Pad</div>
-    <div class="product-sub">M3 · M4 · M12</div>
+<div id="ui">
+  <div id="top">
+    <div id="title">Deep Recovery</div>
+    <div id="dose"><span class="label">DOSE</span><span id="dose-val">01 / 30</span></div>
   </div>
-
-  <div class="status-row">
-    <div>
-      <span class="label">SYS.STATUS</span><br>
-      <span class="value" id="status-val"><span class="status-dot" id="status-dot"></span>STANDBY</span>
-    </div>
-    <div style="text-align:right">
-      <span class="label">DOSE</span><br>
-      <span class="value" id="dose-val">01 / 30</span>
+  <div id="center">
+    <div id="state-word">Entropy</div>
+    <div id="buttons">
+      <button id="btn-init" onclick="startHarmonize()">Initialize Field</button>
+      <button id="btn-reset" class="hidden" onclick="resetField()">Reset</button>
+      <button id="btn-replenish" class="hidden" onclick="resetField()">Replenish Pad</button>
     </div>
   </div>
-
-  <div class="body-state" id="body-state">
-    <div class="state-title" id="state-title">ENTROPY</div>
-    <div class="state-sub" id="state-sub">Internal Dissonance High</div>
-  </div>
-
-  <div class="metrics" id="metrics">
-    <div class="metric">
-      <span class="label">Sleep Debt</span>
-      <span class="metric-val degraded" id="m-sleep">CRITICAL</span>
-    </div>
-    <div class="metric">
-      <span class="label">Tissue Stress</span>
-      <span class="metric-val degraded" id="m-tissue">ELEVATED</span>
-    </div>
-    <div class="metric">
-      <span class="label">Cell Energy</span>
-      <span class="metric-val degraded" id="m-energy">DEPLETED</span>
-    </div>
-  </div>
-
-  <div class="module-card" id="module-card">
-    <div class="module-name" id="mod-name">M3 — Sleep Repair</div>
-    <div class="module-progress" id="mod-pct">0%</div>
-    <div class="module-desc" id="mod-desc">Recalibrating circadian signaling</div>
-  </div>
-
-  <div class="progress-track" id="progress-track">
-    <div class="progress-fill" id="progress-fill"></div>
-  </div>
-
-  <div class="depleted" id="depleted-badge">PAD CYCLE DEPLETED</div>
-
-  <div class="actions" id="actions">
-    <button class="btn primary" id="btn-start" onclick="startRecovery()">Initialize Recovery</button>
-    <button class="btn hidden" id="btn-reset" onclick="resetCycle()">Reset Cycle</button>
-    <button class="btn primary hidden" id="btn-replenish" onclick="replenish()">Replenish Pad</button>
-  </div>
-
 </div>
-
 <script>
-const $ = id => document.getElementById(id);
-const statusVal = $('status-val'), statusDot = $('status-dot'), doseVal = $('dose-val');
-const stateTitle = $('state-title'), stateSub = $('state-sub');
-const mSleep = $('m-sleep'), mTissue = $('m-tissue'), mEnergy = $('m-energy');
-const moduleCard = $('module-card'), modName = $('mod-name'), modPct = $('mod-pct'), modDesc = $('mod-desc');
-const progressTrack = $('progress-track'), progressFill = $('progress-fill');
-const btnStart = $('btn-start'), btnReset = $('btn-reset'), btnReplenish = $('btn-replenish');
-const depletedBadge = $('depleted-badge'), glow = $('glow');
+// --- THREE.JS SETUP ---
+const W=window.innerWidth, H=window.innerHeight;
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setSize(W,H);renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(45,W/H,.1,100);
+camera.position.z=5;
 
-const ring1=$('ring1'),ring2=$('ring2'),ring3=$('ring3'),healPhrase=$('heal-phrase');
+// --- PARTICLE SPHERE ---
+const N=900;
+const basePositions=new Float32Array(N*3);
+const offsets=new Float32Array(N*3);
+const sizes=new Float32Array(N);
+const glowSizes=new Float32Array(N);
 
-const modules = [
-  { name:'M3 — Sleep Repair', desc:'Recalibrating circadian signaling', metric:mSleep, mid:'REPAIRING', end:'RESTORED' },
-  { name:'M4 — Tissue Recovery', desc:'Reducing inflammation markers', metric:mTissue, mid:'REDUCING', end:'NOMINAL' },
-  { name:'M12 — Mitochondria Energy', desc:'Regenerating cellular ATP output', metric:mEnergy, mid:'CHARGING', end:'OPTIMAL' }
-];
+// Fibonacci sphere distribution
+for(let i=0;i<N;i++){
+  const y=1-(i/(N-1))*2;
+  const r=Math.sqrt(1-y*y);
+  const phi=i*2.399963; // golden angle
+  basePositions[i*3]=Math.cos(phi)*r;
+  basePositions[i*3+1]=y;
+  basePositions[i*3+2]=Math.sin(phi)*r;
+  offsets[i*3]=(Math.random()-.5)*.06;
+  offsets[i*3+1]=(Math.random()-.5)*.06;
+  offsets[i*3+2]=(Math.random()-.5)*.06;
+  sizes[i]=Math.random()*.5+.5;
+  glowSizes[i]=Math.random()*.4+.8;
+}
 
-const healPhrases = [
-  'Releasing tension…',
-  'Aligning with your natural rhythm…',
-  'Deep repair in progress…',
-  'Restoring cellular harmony…',
-  'Your field is stabilizing…',
-  'Returning to equilibrium…'
-];
+function makeParticleSystem(sizeArr,opacity,baseSize){
+  const geo=new THREE.BufferGeometry();
+  const pos=new Float32Array(N*3);
+  for(let i=0;i<N*3;i++) pos[i]=basePositions[i]+offsets[i];
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const colors=new Float32Array(N*3);
+  geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  const mat=new THREE.PointsMaterial({
+    size:baseSize,
+    vertexColors:true,
+    transparent:true,
+    opacity:opacity,
+    blending:THREE.AdditiveBlending,
+    depthWrite:false,
+    sizeAttenuation:true
+  });
+  const pts=new THREE.Points(geo,mat);
+  return pts;
+}
 
-// Ambient healing tone via Web Audio
-let audioCtx, ambientGain, ambientStarted=false;
-function startAmbient(){
-  if(ambientStarted)return;
+const sphere=makeParticleSystem(sizes,.95,.055);
+const glow=makeParticleSystem(glowSizes,.25,.16);
+const group=new THREE.Group();
+group.add(sphere);group.add(glow);
+scene.add(group);
+
+// --- STATE ---
+let state='standby'; // standby | harmonizing | restored
+let progress=0; // 0-1
+let audioCtx=null, oscillators=[];
+
+// --- COLOR ---
+const cEntropy=new THREE.Color(.95,.25,.1);
+const cMid=new THREE.Color(.55,.2,.85);
+const cRestored=new THREE.Color(.4,.7,1);
+const cWhite=new THREE.Color(.85,.92,1);
+const tmpColor=new THREE.Color();
+
+function updateColors(p){
+  const cols=sphere.geometry.attributes.color.array;
+  const gcols=glow.geometry.attributes.color.array;
+  for(let i=0;i<N;i++){
+    if(p<.5) tmpColor.copy(cEntropy).lerp(cMid,p*2);
+    else tmpColor.copy(cMid).lerp(cRestored,(p-.5)*2);
+    if(p>.85) tmpColor.lerp(cWhite,(p-.85)/.15*.3);
+    const v=.9+Math.random()*.1;
+    const idx=i*3;
+    cols[idx]=tmpColor.r*v;cols[idx+1]=tmpColor.g*v;cols[idx+2]=tmpColor.b*v;
+    gcols[idx]=tmpColor.r;gcols[idx+1]=tmpColor.g;gcols[idx+2]=tmpColor.b;
+  }
+  sphere.geometry.attributes.color.needsUpdate=true;
+  glow.geometry.attributes.color.needsUpdate=true;
+}
+
+// --- JITTER ---
+function updateJitter(t){
+  const pos=sphere.geometry.attributes.position.array;
+  const gpos=glow.geometry.attributes.position.array;
+  const jitterAmt=state==='harmonizing'? .03*(1-progress)+.005 : state==='restored'? .005 : .04;
+  for(let i=0;i<N;i++){
+    const idx=i*3;
+    const bx=basePositions[idx],by=basePositions[idx+1],bz=basePositions[idx+2];
+    const ox=Math.sin(t*1.1+i*3.7)*jitterAmt;
+    const oy=Math.cos(t*1.3+i*2.3)*jitterAmt;
+    const oz=Math.sin(t*.9+i*5.1)*jitterAmt;
+    pos[idx]=bx+ox;pos[idx+1]=by+oy;pos[idx+2]=bz+oz;
+    gpos[idx]=bx+ox;gpos[idx+1]=by+oy;gpos[idx+2]=bz+oz;
+  }
+  sphere.geometry.attributes.position.needsUpdate=true;
+  glow.geometry.attributes.position.needsUpdate=true;
+}
+
+// --- AUDIO ---
+function startAudio(){
   audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  ambientGain=audioCtx.createGain();
-  ambientGain.gain.value=0;
-  ambientGain.connect(audioCtx.destination);
-  // warm drone
-  const osc1=audioCtx.createOscillator();osc1.type='sine';osc1.frequency.value=136.1; // Om frequency
-  const g1=audioCtx.createGain();g1.gain.value=.12;
-  osc1.connect(g1);g1.connect(ambientGain);osc1.start();
-  // subtle harmonic
-  const osc2=audioCtx.createOscillator();osc2.type='sine';osc2.frequency.value=272.2;
-  const g2=audioCtx.createGain();g2.gain.value=.04;
-  osc2.connect(g2);g2.connect(ambientGain);osc2.start();
-  // very soft breath modulation
-  const lfo=audioCtx.createOscillator();lfo.type='sine';lfo.frequency.value=0.167; // ~6s cycle = breathing
-  const lfoGain=audioCtx.createGain();lfoGain.gain.value=3;
-  lfo.connect(lfoGain);lfoGain.connect(osc1.frequency);lfo.start();
-  ambientStarted=true;
-  gsap.to(ambientGain.gain,{value:.15,duration:3});
+  const freqs=[136.1,272.2,408.3];
+  const gains=[.08,.04,.02];
+  freqs.forEach((f,i)=>{
+    const osc=audioCtx.createOscillator();
+    const g=audioCtx.createGain();
+    osc.type='sine';osc.frequency.value=f;
+    g.gain.value=0;
+    g.gain.linearRampToValueAtTime(gains[i],audioCtx.currentTime+2);
+    osc.connect(g);g.connect(audioCtx.destination);
+    osc.start();
+    oscillators.push({osc,gain:g});
+  });
 }
-function stopAmbient(){
-  if(!ambientStarted||!ambientGain)return;
-  gsap.to(ambientGain.gain,{value:0,duration:2});
+function stopAudio(){
+  if(!audioCtx)return;
+  const t=audioCtx.currentTime;
+  oscillators.forEach(o=>{o.gain.gain.linearRampToValueAtTime(0,t+1.5);o.osc.stop(t+1.6)});
+  setTimeout(()=>{audioCtx.close();audioCtx=null;oscillators=[]},2000);
 }
 
-let phraseInterval;
-function startHealPhrases(){
-  let i=0;
-  function show(){
-    healPhrase.textContent=healPhrases[i%healPhrases.length];
-    gsap.fromTo(healPhrase,{opacity:0},{opacity:1,duration:1.5,yoyo:true,repeat:1,repeatDelay:1});
-    i++;
-  }
-  show();
-  phraseInterval=setInterval(show,5000);
-}
-function stopHealPhrases(){
-  clearInterval(phraseInterval);
-  gsap.to(healPhrase,{opacity:0,duration:1});
-}
+// --- UI ---
+const elState=document.getElementById('state-word');
+const elDose=document.getElementById('dose-val');
+const btnInit=document.getElementById('btn-init');
+const btnReset=document.getElementById('btn-reset');
+const btnReplenish=document.getElementById('btn-replenish');
 
-function startRecovery(){
-  btnStart.classList.add('hidden');
-  statusDot.classList.add('active');
-  statusVal.innerHTML = '<span class="status-dot active" id="status-dot"></span>OPTIMIZING';
-  stateTitle.textContent = 'RECOVERY';
-  stateSub.textContent = 'Modules Activating';
-  progressTrack.style.display = 'block';
-  moduleCard.classList.add('visible');
-  gsap.to(glow, {opacity:1, duration:2});
-  gsap.to(moduleCard, {opacity:1, duration:.5});
-  // Healing atmosphere
-  startAmbient();
-  ring1.classList.add('active');ring2.classList.add('active');ring3.classList.add('active');
-  startHealPhrases();
-  // Warm color shift on glow
-  gsap.to(glow, {background:'radial-gradient(circle,rgba(255,200,100,.04),transparent 70%)', duration:10});
+function setDose(n){elDose.textContent=String(n).padStart(2,'0')+' / 30'}
 
-  let dose = 1;
-  const totalDuration = 18;
-  const phaseTime = totalDuration / 3;
+// --- HARMONIZE ---
+let harmStart=0;
+const DURATION=20;
 
-  // Dose counter
-  const doseInterval = setInterval(()=>{
-    if(dose<30){dose++;doseVal.textContent=String(dose).padStart(2,'0')+' / 30'}
-  }, (totalDuration*1000)/29);
-
-  // Progress bar
-  gsap.to(progressFill, {width:'100%', duration:totalDuration, ease:'none'});
-
-  // Run modules sequentially
-  let phase = 0;
-  function runPhase(){
-    if(phase >= modules.length){clearInterval(doseInterval);finish();return}
-    const m = modules[phase];
-    modName.textContent = m.name;
-    modDesc.textContent = m.desc;
-    gsap.fromTo(moduleCard,{opacity:0},{opacity:1,duration:.4});
-
-    // Animate percentage
-    let p = {v:0};
-    gsap.to(p, {v:100, duration:phaseTime, ease:'power1.inOut', onUpdate:()=>{
-      modPct.textContent = Math.round(p.v)+'%';
-    }});
-
-    // Metric mid-update
-    setTimeout(()=>{
-      m.metric.textContent = m.mid;
-      m.metric.className = 'metric-val improving';
-    }, phaseTime*500);
-
-    // Metric final
-    setTimeout(()=>{
-      m.metric.textContent = m.end;
-      m.metric.className = 'metric-val optimal';
-      phase++;
-      runPhase();
-    }, phaseTime*1000);
-  }
-  runPhase();
+function startHarmonize(){
+  if(state!=='standby')return;
+  state='harmonizing';
+  harmStart=performance.now()/1000;
+  elState.textContent='Harmonizing';
+  btnInit.classList.add('hidden');
+  startAudio();
+  // breathing
+  gsap.to(group.scale,{x:1.06,y:1.06,z:1.06,duration:3,yoyo:true,repeat:-1,ease:'sine.inOut'});
 }
 
-function finish(){
-  doseVal.textContent = '30 / 30';
-  statusVal.innerHTML = '<span class="status-dot complete"></span>COMPLETE';
-  stateTitle.textContent = 'RESTORED';
-  stateSub.textContent = 'All Systems Nominal';
-  gsap.to(moduleCard, {opacity:0, duration:.4, onComplete:()=>moduleCard.classList.remove('visible')});
-  gsap.to(glow, {opacity:0, duration:2});
-  stopAmbient();
-  stopHealPhrases();
-  ring1.classList.remove('active');ring2.classList.remove('active');ring3.classList.remove('active');
-  gsap.to([ring1,ring2,ring3],{opacity:0,duration:1});
-  gsap.to(depletedBadge, {opacity:1, duration:.6, delay:.3});
+function finishRestore(){
+  state='restored';
+  progress=1;
+  setDose(30);
+  elState.textContent='Restored';
   btnReset.classList.remove('hidden');
   btnReplenish.classList.remove('hidden');
-  gsap.fromTo(btnReset,{opacity:0},{opacity:1,duration:.5,delay:.4});
-  gsap.fromTo(btnReplenish,{opacity:0},{opacity:1,duration:.5,delay:.6});
+  gsap.killTweensOf(group.scale);
+  gsap.to(group.scale,{x:1,y:1,z:1,duration:2,ease:'sine.out'});
+  // gentle pulse for restored
+  setTimeout(()=>{
+    if(state==='restored') gsap.to(group.scale,{x:1.03,y:1.03,z:1.03,duration:4,yoyo:true,repeat:-1,ease:'sine.inOut'});
+  },2100);
+  stopAudio();
 }
 
-function resetCycle(){
+function resetField(){
+  state='standby';progress=0;
+  gsap.killTweensOf(group.scale);
+  gsap.to(group.scale,{x:1,y:1,z:1,duration:1});
+  elState.textContent='Entropy';
+  setDose(1);
+  btnInit.classList.remove('hidden');
   btnReset.classList.add('hidden');
   btnReplenish.classList.add('hidden');
-  progressTrack.style.display = 'none';
-  progressFill.style.width = '0%';
-  depletedBadge.style.opacity = 0;
-  statusVal.innerHTML = '<span class="status-dot"></span>STANDBY';
-  doseVal.textContent = '01 / 30';
-  stateTitle.textContent = 'ENTROPY';
-  stateSub.textContent = 'Internal Dissonance High';
-  mSleep.textContent = 'CRITICAL'; mSleep.className = 'metric-val degraded';
-  mTissue.textContent = 'ELEVATED'; mTissue.className = 'metric-val degraded';
-  mEnergy.textContent = 'DEPLETED'; mEnergy.className = 'metric-val degraded';
-  btnStart.classList.remove('hidden');
-  gsap.fromTo(btnStart,{opacity:0},{opacity:1,duration:.4});
+  updateColors(0);
 }
 
-function replenish(){
-  alert('Redirecting to replenishment…');
+// --- RENDER LOOP ---
+function animate(){
+  requestAnimationFrame(animate);
+  const t=performance.now()/1000;
+  group.rotation.y=t*.15;
+
+  if(state==='harmonizing'){
+    progress=Math.min((t-harmStart)/DURATION,1);
+    const dose=Math.floor(progress*29)+1;
+    setDose(dose);
+    if(progress>=1) finishRestore();
+  }
+
+  updateColors(progress);
+  updateJitter(t);
+
+  // glow intensity
+  glow.material.opacity=state==='restored'?.4: state==='harmonizing'? .2+progress*.2 : .2;
+
+  renderer.render(scene,camera);
 }
+updateColors(0);
+animate();
+
+// --- RESIZE ---
+window.addEventListener('resize',()=>{
+  const w=window.innerWidth,h=window.innerHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+});
 </script>
 </body>
 </html>
