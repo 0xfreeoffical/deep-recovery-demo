@@ -8,23 +8,29 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Georgia,'Times New Roman',serif}
 canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
-#ui{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+#ui{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;gap:0}
+#topSection{position:absolute;top:max(12vh,60px);left:0;width:100%;text-align:center}
 #subtitle{font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:#777;margin-bottom:6px;font-weight:300}
 #title{font-size:44px;font-weight:300;color:#fff;margin-bottom:0;font-family:Georgia,serif}
-#centerLabel{position:absolute;font-size:13px;letter-spacing:.35em;text-transform:uppercase;color:rgba(255,255,255,.8);pointer-events:none}
-#btn{pointer-events:all;cursor:pointer;border:none;outline:none;background:rgba(200,180,160,.3);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:30px;padding:16px 40px;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#999;font-family:Georgia,serif;min-height:48px;min-width:48px;position:absolute;transition:color .3s}
+#centerLabel{font-size:13px;letter-spacing:.35em;text-transform:uppercase;color:rgba(255,255,255,.8);pointer-events:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+#bottomSection{position:absolute;bottom:max(8vh,40px);left:0;width:100%;display:flex;flex-direction:column;align-items:center;gap:12px}
+#btn{pointer-events:all;cursor:pointer;border:none;outline:none;background:rgba(200,180,160,.3);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:30px;padding:16px 40px;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#999;font-family:Georgia,serif;min-height:48px;min-width:48px;transition:color .3s}
 #btn:active{opacity:.8}
-#statusText{position:absolute;bottom:0;font-size:11px;color:#c8a050;letter-spacing:.15em;opacity:0;text-align:center;padding:0 20px}
+#statusText{font-size:11px;color:#c8a050;letter-spacing:.15em;opacity:0;text-align:center;padding:0 20px}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="ui">
+<div id="topSection">
 <div id="subtitle">D A I L Y &nbsp; R I T U A L</div>
 <div id="title">Aura</div>
+</div>
 <div id="centerLabel">R E - C A L I B R A T I N G</div>
-<button id="btn">S Y N C H R O N I Z I N G . . .</button>
+<div id="bottomSection">
+<button id="btn">A C T I V A T E &nbsp; F I E L D</button>
 <div id="statusText">Deep Recovery Active • M6 + M12 Locked</div>
+</div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
@@ -47,26 +53,7 @@ function resize(){
 }
 
 function positionUI(){
-  const r=getRadius();
-  centerLabel.style.top=(cy-8)+'px';
-  centerLabel.style.left='50%';
-  centerLabel.style.transform='translateX(-50%)';
-  btn.style.left='50%';
-  btn.style.transform='translateX(-50%)';
-  statusText.style.left='50%';
-  statusText.style.transform='translateX(-50%)';
-  updateButtonPos();
-}
-
-function updateButtonPos(){
-  const r=getRadius();
-  const t=getT();
-  // In state 1 (calibrating): button below blob. In active: inside lower orb area
-  const belowY=cy+r*0.55+30;
-  const insideY=cy+r*0.3;
-  const btnY=lerp(belowY,insideY,t);
-  btn.style.top=btnY+'px';
-  statusText.style.bottom=(H-cy-r*0.55-60)+'px';
+  // Layout is handled by CSS flex/absolute positioning now
 }
 
 function getRadius(){
@@ -302,7 +289,7 @@ function frame(now){
       }else{
         state=0;
         centerLabel.style.opacity='1';
-        btn.textContent='S Y N C H R O N I Z I N G . . .';
+        btn.textContent='A C T I V A T E   F I E L D';
         btn.style.color='#999';
       }
     }
@@ -310,7 +297,6 @@ function frame(now){
   
   const t=getT();
   const radius=getRadius();
-  updateButtonPos();
   
   ctx.clearRect(0,0,W,H);
   drawStars(time);
