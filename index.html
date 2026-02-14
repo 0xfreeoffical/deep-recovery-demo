@@ -76,12 +76,26 @@ pointer-events:none;z-index:0}
 /* Glow effect */
 .glow{position:fixed;top:50%;left:50%;width:300px;height:300px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(200,255,0,.03),transparent 70%);pointer-events:none;opacity:0;z-index:0}
 
+/* Breathing ring */
+.breath-ring{position:fixed;top:50%;left:50%;width:180px;height:180px;transform:translate(-50%,-50%);border-radius:50%;border:1px solid rgba(200,255,0,.06);pointer-events:none;opacity:0;z-index:0}
+.breath-ring.active{opacity:1;animation:breathe 6s ease-in-out infinite}
+.breath-ring:nth-child(2){width:240px;height:240px;animation-delay:-.5s;border-color:rgba(0,224,255,.04)}
+.breath-ring:nth-child(3){width:300px;height:300px;animation-delay:-1s;border-color:rgba(200,255,0,.03)}
+@keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6}50%{transform:translate(-50%,-50%) scale(1.15);opacity:.15}}
+
+/* Healing phrase */
+.heal-phrase{position:fixed;top:38%;left:50%;transform:translate(-50%,-50%);font-weight:200;font-size:15px;letter-spacing:.12em;color:rgba(255,255,255,.25);pointer-events:none;opacity:0;z-index:0;text-align:center;width:80%;transition:opacity 1.5s}
+
 /* Fade utility */
 .fade-out{opacity:0;transition:opacity .4s}
 </style>
 </head>
 <body>
 <div class="glow" id="glow"></div>
+<div class="breath-ring" id="ring1"></div>
+<div class="breath-ring" id="ring2"></div>
+<div class="breath-ring" id="ring3"></div>
+<div class="heal-phrase" id="heal-phrase"></div>
 <div class="device" id="device">
 
   <div class="header">
@@ -150,11 +164,66 @@ const progressTrack = $('progress-track'), progressFill = $('progress-fill');
 const btnStart = $('btn-start'), btnReset = $('btn-reset'), btnReplenish = $('btn-replenish');
 const depletedBadge = $('depleted-badge'), glow = $('glow');
 
+const ring1=$('ring1'),ring2=$('ring2'),ring3=$('ring3'),healPhrase=$('heal-phrase');
+
 const modules = [
   { name:'M3 — Sleep Repair', desc:'Recalibrating circadian signaling', metric:mSleep, mid:'REPAIRING', end:'RESTORED' },
   { name:'M4 — Tissue Recovery', desc:'Reducing inflammation markers', metric:mTissue, mid:'REDUCING', end:'NOMINAL' },
   { name:'M12 — Mitochondria Energy', desc:'Regenerating cellular ATP output', metric:mEnergy, mid:'CHARGING', end:'OPTIMAL' }
 ];
+
+const healPhrases = [
+  'Releasing tension…',
+  'Aligning with your natural rhythm…',
+  'Deep repair in progress…',
+  'Restoring cellular harmony…',
+  'Your field is stabilizing…',
+  'Returning to equilibrium…'
+];
+
+// Ambient healing tone via Web Audio
+let audioCtx, ambientGain, ambientStarted=false;
+function startAmbient(){
+  if(ambientStarted)return;
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  ambientGain=audioCtx.createGain();
+  ambientGain.gain.value=0;
+  ambientGain.connect(audioCtx.destination);
+  // warm drone
+  const osc1=audioCtx.createOscillator();osc1.type='sine';osc1.frequency.value=136.1; // Om frequency
+  const g1=audioCtx.createGain();g1.gain.value=.12;
+  osc1.connect(g1);g1.connect(ambientGain);osc1.start();
+  // subtle harmonic
+  const osc2=audioCtx.createOscillator();osc2.type='sine';osc2.frequency.value=272.2;
+  const g2=audioCtx.createGain();g2.gain.value=.04;
+  osc2.connect(g2);g2.connect(ambientGain);osc2.start();
+  // very soft breath modulation
+  const lfo=audioCtx.createOscillator();lfo.type='sine';lfo.frequency.value=0.167; // ~6s cycle = breathing
+  const lfoGain=audioCtx.createGain();lfoGain.gain.value=3;
+  lfo.connect(lfoGain);lfoGain.connect(osc1.frequency);lfo.start();
+  ambientStarted=true;
+  gsap.to(ambientGain.gain,{value:.15,duration:3});
+}
+function stopAmbient(){
+  if(!ambientStarted||!ambientGain)return;
+  gsap.to(ambientGain.gain,{value:0,duration:2});
+}
+
+let phraseInterval;
+function startHealPhrases(){
+  let i=0;
+  function show(){
+    healPhrase.textContent=healPhrases[i%healPhrases.length];
+    gsap.fromTo(healPhrase,{opacity:0},{opacity:1,duration:1.5,yoyo:true,repeat:1,repeatDelay:1});
+    i++;
+  }
+  show();
+  phraseInterval=setInterval(show,5000);
+}
+function stopHealPhrases(){
+  clearInterval(phraseInterval);
+  gsap.to(healPhrase,{opacity:0,duration:1});
+}
 
 function startRecovery(){
   btnStart.classList.add('hidden');
@@ -164,8 +233,14 @@ function startRecovery(){
   stateSub.textContent = 'Modules Activating';
   progressTrack.style.display = 'block';
   moduleCard.classList.add('visible');
-  gsap.to(glow, {opacity:1, duration:1});
+  gsap.to(glow, {opacity:1, duration:2});
   gsap.to(moduleCard, {opacity:1, duration:.5});
+  // Healing atmosphere
+  startAmbient();
+  ring1.classList.add('active');ring2.classList.add('active');ring3.classList.add('active');
+  startHealPhrases();
+  // Warm color shift on glow
+  gsap.to(glow, {background:'radial-gradient(circle,rgba(255,200,100,.04),transparent 70%)', duration:10});
 
   let dose = 1;
   const totalDuration = 18;
@@ -217,7 +292,11 @@ function finish(){
   stateTitle.textContent = 'RESTORED';
   stateSub.textContent = 'All Systems Nominal';
   gsap.to(moduleCard, {opacity:0, duration:.4, onComplete:()=>moduleCard.classList.remove('visible')});
-  gsap.to(glow, {opacity:0, duration:1});
+  gsap.to(glow, {opacity:0, duration:2});
+  stopAmbient();
+  stopHealPhrases();
+  ring1.classList.remove('active');ring2.classList.remove('active');ring3.classList.remove('active');
+  gsap.to([ring1,ring2,ring3],{opacity:0,duration:1});
   gsap.to(depletedBadge, {opacity:1, duration:.6, delay:.3});
   btnReset.classList.remove('hidden');
   btnReplenish.classList.remove('hidden');
