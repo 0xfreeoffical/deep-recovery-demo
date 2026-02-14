@@ -2,252 +2,207 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>Deep Recovery Pad</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Aura — Deep Recovery Pad</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;color:#fff;-webkit-tap-highlight-color:transparent}
-canvas{position:fixed;top:0;left:0;z-index:0}
-#ui{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;display:flex;flex-direction:column}
-#top{display:flex;justify-content:space-between;align-items:flex-start;padding:28px 24px 0}
-#title{font-size:15px;font-weight:700;letter-spacing:3px;text-transform:uppercase}
-#dose{font-family:'SF Mono',SFMono-Regular,Menlo,monospace;font-size:12px;letter-spacing:2px;opacity:.7;text-align:right}
-#dose .label{font-size:10px;display:block;margin-bottom:2px;letter-spacing:3px}
-#center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center}
-#state-word{font-size:clamp(28px,7vw,52px);font-weight:200;letter-spacing:8px;text-transform:uppercase;opacity:.85;margin-bottom:40px;transition:opacity .6s}
-#buttons{display:flex;gap:16px;margin-top:40px;pointer-events:auto}
-#buttons button{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;padding:12px 32px;font-size:13px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;border-radius:40px;font-family:inherit;transition:all .3s}
-#buttons button:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.6)}
-#buttons button:active{transform:scale(.96)}
-.hidden{display:none!important}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#fff;-webkit-tap-highlight-color:transparent;user-select:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+
+/* Stars */
+#stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+
+/* Top label */
+.top-label{position:absolute;top:max(env(safe-area-inset-top,20px),28px);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.35);font-family:'SF Mono',SFMono-Regular,'Courier New',monospace;z-index:2}
+
+/* Title */
+.title{font-size:42px;font-weight:200;letter-spacing:.06em;margin-bottom:32px;z-index:2;opacity:.92}
+
+/* Orb container */
+.orb-wrap{position:relative;width:260px;height:260px;display:flex;align-items:center;justify-content:center;z-index:1}
+
+/* The blob layers */
+.blob-container{position:absolute;width:100%;height:100%;filter:blur(18px) contrast(1.4)}
+.blob-layer{position:absolute;border-radius:50%;will-change:border-radius,transform}
+.blob-core{width:55%;height:55%;top:22.5%;left:22.5%;background:radial-gradient(circle,#2dd4bf 0%,#0d9488 60%,transparent 100%)}
+.blob-mid{width:75%;height:75%;top:12.5%;left:12.5%;background:radial-gradient(circle,rgba(20,184,166,.5) 0%,rgba(239,68,68,.45) 50%,transparent 100%);mix-blend-mode:screen}
+.blob-outer{width:100%;height:100%;top:0;left:0;background:radial-gradient(circle,rgba(239,68,68,.3) 20%,rgba(249,115,22,.5) 55%,rgba(220,38,38,.25) 75%,transparent 100%)}
+.blob-glow{position:absolute;width:130%;height:130%;top:-15%;left:-15%;border-radius:50%;background:radial-gradient(circle,transparent 35%,rgba(239,68,68,.18) 55%,transparent 75%);pointer-events:none;filter:blur(10px)}
+
+/* Orb overlay text */
+.orb-text{position:absolute;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.7);font-weight:300;z-index:3;pointer-events:none;text-align:center}
+
+/* Button */
+.cta-btn{margin-top:40px;padding:14px 36px;border:1px solid rgba(255,255,255,.15);border-radius:50px;background:rgba(255,255,255,.08);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:rgba(255,255,255,.85);font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:400;cursor:pointer;z-index:2;transition:background .3s,border-color .3s;outline:none;font-family:inherit}
+.cta-btn:active{background:rgba(255,255,255,.15)}
+
+/* Sub text */
+.sub-text{margin-top:16px;font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.25);z-index:2;text-align:center;min-height:14px}
+
+/* Blob morphing animations */
+@keyframes morph1{
+0%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%}
+25%{border-radius:40% 60% 70% 30%/70% 40% 30% 60%}
+50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%}
+75%{border-radius:55% 35% 50% 50%/40% 55% 45% 60%}
+100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%}
+}
+@keyframes morph2{
+0%{border-radius:50% 50% 40% 60%/55% 45% 55% 45%}
+33%{border-radius:65% 35% 55% 45%/45% 55% 40% 60%}
+66%{border-radius:35% 65% 45% 55%/60% 40% 55% 45%}
+100%{border-radius:50% 50% 40% 60%/55% 45% 55% 45%}
+}
+@keyframes morph3{
+0%{border-radius:45% 55% 60% 40%/50% 50% 45% 55%}
+50%{border-radius:55% 45% 35% 65%/60% 40% 60% 40%}
+100%{border-radius:45% 55% 60% 40%/50% 50% 45% 55%}
+}
+.blob-core{animation:morph1 8s ease-in-out infinite}
+.blob-mid{animation:morph2 10s ease-in-out infinite}
+.blob-outer{animation:morph3 12s ease-in-out infinite}
+
+@keyframes breathe{
+0%,100%{transform:scale(1)}
+50%{transform:scale(1.03)}
+}
+.orb-wrap{animation:breathe 5s ease-in-out infinite}
 </style>
 </head>
 <body>
-<div id="ui">
-  <div id="top">
-    <div id="title">Deep Recovery</div>
-    <div id="dose"><span class="label">DOSE</span><span id="dose-val">01 / 30</span></div>
-  </div>
-  <div id="center">
-    <div id="state-word">Entropy</div>
-    <div id="buttons">
-      <button id="btn-init" onclick="startHarmonize()">Initialize Field</button>
-      <button id="btn-reset" class="hidden" onclick="resetField()">Reset</button>
-      <button id="btn-replenish" class="hidden" onclick="resetField()">Replenish Pad</button>
+<canvas id="stars"></canvas>
+<div id="app">
+  <div class="top-label">DAILY RITUAL</div>
+  <div class="title">Aura</div>
+  <div class="orb-wrap" id="orbWrap">
+    <div class="blob-glow" id="blobGlow"></div>
+    <div class="blob-container" id="blobContainer">
+      <div class="blob-layer blob-outer" id="blobOuter"></div>
+      <div class="blob-layer blob-mid" id="blobMid"></div>
+      <div class="blob-layer blob-core" id="blobCore"></div>
     </div>
+    <div class="orb-text" id="orbText">RE-CALIBRATING</div>
   </div>
+  <button class="cta-btn" id="ctaBtn">ACTIVATE FIELD</button>
+  <div class="sub-text" id="subText"></div>
 </div>
+
 <script>
-// --- THREE.JS SETUP ---
-const W=window.innerWidth, H=window.innerHeight;
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
-renderer.setSize(W,H);renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-document.body.appendChild(renderer.domElement);
-const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(45,W/H,.1,100);
-camera.position.z=5;
-
-// --- PARTICLE SPHERE ---
-const N=900;
-const basePositions=new Float32Array(N*3);
-const offsets=new Float32Array(N*3);
-const sizes=new Float32Array(N);
-const glowSizes=new Float32Array(N);
-
-// Fibonacci sphere distribution
-for(let i=0;i<N;i++){
-  const y=1-(i/(N-1))*2;
-  const r=Math.sqrt(1-y*y);
-  const phi=i*2.399963; // golden angle
-  basePositions[i*3]=Math.cos(phi)*r;
-  basePositions[i*3+1]=y;
-  basePositions[i*3+2]=Math.sin(phi)*r;
-  offsets[i*3]=(Math.random()-.5)*.06;
-  offsets[i*3+1]=(Math.random()-.5)*.06;
-  offsets[i*3+2]=(Math.random()-.5)*.06;
-  sizes[i]=Math.random()*.5+.5;
-  glowSizes[i]=Math.random()*.4+.8;
-}
-
-function makeParticleSystem(sizeArr,opacity,baseSize){
-  const geo=new THREE.BufferGeometry();
-  const pos=new Float32Array(N*3);
-  for(let i=0;i<N*3;i++) pos[i]=basePositions[i]+offsets[i];
-  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  const colors=new Float32Array(N*3);
-  geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
-  const mat=new THREE.PointsMaterial({
-    size:baseSize,
-    vertexColors:true,
-    transparent:true,
-    opacity:opacity,
-    blending:THREE.AdditiveBlending,
-    depthWrite:false,
-    sizeAttenuation:true
-  });
-  const pts=new THREE.Points(geo,mat);
-  return pts;
-}
-
-const sphere=makeParticleSystem(sizes,.95,.055);
-const glow=makeParticleSystem(glowSizes,.25,.16);
-const group=new THREE.Group();
-group.add(sphere);group.add(glow);
-scene.add(group);
-
-// --- STATE ---
-let state='standby'; // standby | harmonizing | restored
-let progress=0; // 0-1
-let audioCtx=null, oscillators=[];
-
-// --- COLOR ---
-const cEntropy=new THREE.Color(.95,.25,.1);
-const cMid=new THREE.Color(.55,.2,.85);
-const cRestored=new THREE.Color(.4,.7,1);
-const cWhite=new THREE.Color(.85,.92,1);
-const tmpColor=new THREE.Color();
-
-function updateColors(p){
-  const cols=sphere.geometry.attributes.color.array;
-  const gcols=glow.geometry.attributes.color.array;
-  for(let i=0;i<N;i++){
-    if(p<.5) tmpColor.copy(cEntropy).lerp(cMid,p*2);
-    else tmpColor.copy(cMid).lerp(cRestored,(p-.5)*2);
-    if(p>.85) tmpColor.lerp(cWhite,(p-.85)/.15*.3);
-    const v=.9+Math.random()*.1;
-    const idx=i*3;
-    cols[idx]=tmpColor.r*v;cols[idx+1]=tmpColor.g*v;cols[idx+2]=tmpColor.b*v;
-    gcols[idx]=tmpColor.r;gcols[idx+1]=tmpColor.g;gcols[idx+2]=tmpColor.b;
+// Stars
+(function(){
+  const c=document.getElementById('stars'),ctx=c.getContext('2d');
+  let stars=[];
+  function resize(){c.width=innerWidth;c.height=innerHeight;init()}
+  function init(){
+    stars=[];
+    for(let i=0;i<120;i++) stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*.8+.2,a:Math.random()*.4+.1,d:Math.random()*Math.PI*2,s:Math.random()*.15+.05});
   }
-  sphere.geometry.attributes.color.needsUpdate=true;
-  glow.geometry.attributes.color.needsUpdate=true;
-}
-
-// --- JITTER ---
-function updateJitter(t){
-  const pos=sphere.geometry.attributes.position.array;
-  const gpos=glow.geometry.attributes.position.array;
-  const jitterAmt=state==='harmonizing'? .03*(1-progress)+.005 : state==='restored'? .005 : .04;
-  for(let i=0;i<N;i++){
-    const idx=i*3;
-    const bx=basePositions[idx],by=basePositions[idx+1],bz=basePositions[idx+2];
-    const ox=Math.sin(t*1.1+i*3.7)*jitterAmt;
-    const oy=Math.cos(t*1.3+i*2.3)*jitterAmt;
-    const oz=Math.sin(t*.9+i*5.1)*jitterAmt;
-    pos[idx]=bx+ox;pos[idx+1]=by+oy;pos[idx+2]=bz+oz;
-    gpos[idx]=bx+ox;gpos[idx+1]=by+oy;gpos[idx+2]=bz+oz;
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(s=>{
+      s.x+=Math.cos(s.d)*s.s*.15;
+      s.y+=Math.sin(s.d)*s.s*.15;
+      if(s.x<0)s.x=c.width;if(s.x>c.width)s.x=0;
+      if(s.y<0)s.y=c.height;if(s.y>c.height)s.y=0;
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${s.a})`;ctx.fill();
+    });
+    requestAnimationFrame(draw);
   }
-  sphere.geometry.attributes.position.needsUpdate=true;
-  glow.geometry.attributes.position.needsUpdate=true;
-}
+  resize();draw();
+  addEventListener('resize',resize);
+})();
 
-// --- AUDIO ---
+// Audio
+let audioCtx,osc,gain;
 function startAudio(){
+  if(audioCtx)return;
   audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  const freqs=[136.1,272.2,408.3];
-  const gains=[.08,.04,.02];
-  freqs.forEach((f,i)=>{
-    const osc=audioCtx.createOscillator();
-    const g=audioCtx.createGain();
-    osc.type='sine';osc.frequency.value=f;
-    g.gain.value=0;
-    g.gain.linearRampToValueAtTime(gains[i],audioCtx.currentTime+2);
-    osc.connect(g);g.connect(audioCtx.destination);
-    osc.start();
-    oscillators.push({osc,gain:g});
-  });
-}
-function stopAudio(){
-  if(!audioCtx)return;
-  const t=audioCtx.currentTime;
-  oscillators.forEach(o=>{o.gain.gain.linearRampToValueAtTime(0,t+1.5);o.osc.stop(t+1.6)});
-  setTimeout(()=>{audioCtx.close();audioCtx=null;oscillators=[]},2000);
+  osc=audioCtx.createOscillator();gain=audioCtx.createGain();
+  osc.type='sine';osc.frequency.value=136.1;
+  gain.gain.value=0;
+  osc.connect(gain);gain.connect(audioCtx.destination);
+  osc.start();
 }
 
-// --- UI ---
-const elState=document.getElementById('state-word');
-const elDose=document.getElementById('dose-val');
-const btnInit=document.getElementById('btn-init');
-const btnReset=document.getElementById('btn-reset');
-const btnReplenish=document.getElementById('btn-replenish');
+// State machine
+let state='initial'; // initial | syncing | active
+const btn=document.getElementById('ctaBtn');
+const orbText=document.getElementById('orbText');
+const subText=document.getElementById('subText');
+const blobCore=document.getElementById('blobCore');
+const blobMid=document.getElementById('blobMid');
+const blobOuter=document.getElementById('blobOuter');
+const blobGlow=document.getElementById('blobGlow');
+const blobContainer=document.getElementById('blobContainer');
+const orbWrap=document.getElementById('orbWrap');
 
-function setDose(n){elDose.textContent=String(n).padStart(2,'0')+' / 30'}
-
-// --- HARMONIZE ---
-let harmStart=0;
-const DURATION=20;
-
-function startHarmonize(){
-  if(state!=='standby')return;
-  state='harmonizing';
-  harmStart=performance.now()/1000;
-  elState.textContent='Harmonizing';
-  btnInit.classList.add('hidden');
+btn.addEventListener('click',()=>{
+  if(state==='syncing')return;
   startAudio();
-  // breathing
-  gsap.to(group.scale,{x:1.06,y:1.06,z:1.06,duration:3,yoyo:true,repeat:-1,ease:'sine.inOut'});
-}
-
-function finishRestore(){
-  state='restored';
-  progress=1;
-  setDose(30);
-  elState.textContent='Restored';
-  btnReset.classList.remove('hidden');
-  btnReplenish.classList.remove('hidden');
-  gsap.killTweensOf(group.scale);
-  gsap.to(group.scale,{x:1,y:1,z:1,duration:2,ease:'sine.out'});
-  // gentle pulse for restored
-  setTimeout(()=>{
-    if(state==='restored') gsap.to(group.scale,{x:1.03,y:1.03,z:1.03,duration:4,yoyo:true,repeat:-1,ease:'sine.inOut'});
-  },2100);
-  stopAudio();
-}
-
-function resetField(){
-  state='standby';progress=0;
-  gsap.killTweensOf(group.scale);
-  gsap.to(group.scale,{x:1,y:1,z:1,duration:1});
-  elState.textContent='Entropy';
-  setDose(1);
-  btnInit.classList.remove('hidden');
-  btnReset.classList.add('hidden');
-  btnReplenish.classList.add('hidden');
-  updateColors(0);
-}
-
-// --- RENDER LOOP ---
-function animate(){
-  requestAnimationFrame(animate);
-  const t=performance.now()/1000;
-  group.rotation.y=t*.15;
-
-  if(state==='harmonizing'){
-    progress=Math.min((t-harmStart)/DURATION,1);
-    const dose=Math.floor(progress*29)+1;
-    setDose(dose);
-    if(progress>=1) finishRestore();
-  }
-
-  updateColors(progress);
-  updateJitter(t);
-
-  // glow intensity
-  glow.material.opacity=state==='restored'?.4: state==='harmonizing'? .2+progress*.2 : .2;
-
-  renderer.render(scene,camera);
-}
-updateColors(0);
-animate();
-
-// --- RESIZE ---
-window.addEventListener('resize',()=>{
-  const w=window.innerWidth,h=window.innerHeight;
-  camera.aspect=w/h;camera.updateProjectionMatrix();
-  renderer.setSize(w,h);
+  if(state==='initial') activate();
+  else deactivate();
 });
+
+function activate(){
+  state='syncing';
+  btn.textContent='SYNCHRONIZING...';
+  btn.style.pointerEvents='none';
+  orbText.textContent='SYNCHRONIZING';
+
+  // Fade audio in
+  if(gain) gain.gain.linearRampToValueAtTime(.06,audioCtx.currentTime+3);
+
+  // Transition blob to white/pearl orb
+  const tl=gsap.timeline({onComplete:()=>{
+    state='active';
+    btn.textContent='DEACTIVATE FIELD';
+    btn.style.pointerEvents='auto';
+    orbText.textContent='FIELD ACTIVE';
+    subText.textContent='Deep Recovery Active • M3 + M4 + M12 Locked';
+  }});
+
+  tl.to(blobCore,{background:'radial-gradient(circle,#fff 0%,#e8e0d4 60%,transparent 100%)',duration:3,ease:'power2.inOut'},0);
+  tl.to(blobMid,{background:'radial-gradient(circle,rgba(255,255,255,.6) 0%,rgba(255,240,220,.4) 50%,transparent 100%)',duration:3,ease:'power2.inOut'},0);
+  tl.to(blobOuter,{background:'radial-gradient(circle,rgba(255,250,240,.35) 20%,rgba(255,200,120,.3) 55%,rgba(255,180,80,.15) 75%,transparent 100%)',duration:3,ease:'power2.inOut'},0);
+  tl.to(blobGlow,{background:'radial-gradient(circle,transparent 30%,rgba(255,180,80,.22) 55%,rgba(255,140,40,.1) 70%,transparent 85%)',duration:3,ease:'power2.inOut'},0);
+
+  // Make it rounder
+  tl.to([blobCore,blobMid,blobOuter],{borderRadius:'50%',duration:3,ease:'power2.inOut'},0);
+
+  // Increase contrast less for softer look
+  tl.to(blobContainer,{filter:'blur(22px) contrast(1.15)',duration:3,ease:'power2.inOut'},0);
+}
+
+function deactivate(){
+  state='syncing';
+  btn.textContent='SYNCHRONIZING...';
+  btn.style.pointerEvents='none';
+  subText.textContent='';
+  orbText.textContent='RE-CALIBRATING';
+
+  if(gain) gain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+1.5);
+
+  const tl=gsap.timeline({onComplete:()=>{
+    state='initial';
+    btn.textContent='ACTIVATE FIELD';
+    btn.style.pointerEvents='auto';
+    // Restart morph animations by re-adding classes
+    [blobCore,blobMid,blobOuter].forEach(el=>{
+      el.style.borderRadius='';
+      el.style.animation='none';
+      el.offsetHeight; // reflow
+      el.style.animation='';
+    });
+  }});
+
+  tl.to(blobCore,{background:'radial-gradient(circle,#2dd4bf 0%,#0d9488 60%,transparent 100%)',duration:2,ease:'power2.inOut'},0);
+  tl.to(blobMid,{background:'radial-gradient(circle,rgba(20,184,166,.5) 0%,rgba(239,68,68,.45) 50%,transparent 100%)',duration:2,ease:'power2.inOut'},0);
+  tl.to(blobOuter,{background:'radial-gradient(circle,rgba(239,68,68,.3) 20%,rgba(249,115,22,.5) 55%,rgba(220,38,38,.25) 75%,transparent 100%)',duration:2,ease:'power2.inOut'},0);
+  tl.to(blobGlow,{background:'radial-gradient(circle,transparent 35%,rgba(239,68,68,.18) 55%,transparent 75%)',duration:2,ease:'power2.inOut'},0);
+  tl.to(blobContainer,{filter:'blur(18px) contrast(1.4)',duration:2,ease:'power2.inOut'},0);
+}
 </script>
 </body>
 </html>
