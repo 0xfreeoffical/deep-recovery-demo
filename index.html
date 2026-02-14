@@ -2,207 +2,327 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Aura — Deep Recovery Pad</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Aura — Daily Ritual</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#fff;-webkit-tap-highlight-color:transparent;user-select:none}
-#app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-
-/* Stars */
-#stars{position:fixed;inset:0;pointer-events:none;z-index:0}
-
-/* Top label */
-.top-label{position:absolute;top:max(env(safe-area-inset-top,20px),28px);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.35);font-family:'SF Mono',SFMono-Regular,'Courier New',monospace;z-index:2}
-
-/* Title */
-.title{font-size:42px;font-weight:200;letter-spacing:.06em;margin-bottom:32px;z-index:2;opacity:.92}
-
-/* Orb container */
-.orb-wrap{position:relative;width:260px;height:260px;display:flex;align-items:center;justify-content:center;z-index:1}
-
-/* The blob layers */
-.blob-container{position:absolute;width:100%;height:100%;filter:blur(18px) contrast(1.4)}
-.blob-layer{position:absolute;border-radius:50%;will-change:border-radius,transform}
-.blob-core{width:55%;height:55%;top:22.5%;left:22.5%;background:radial-gradient(circle,#2dd4bf 0%,#0d9488 60%,transparent 100%)}
-.blob-mid{width:75%;height:75%;top:12.5%;left:12.5%;background:radial-gradient(circle,rgba(20,184,166,.5) 0%,rgba(239,68,68,.45) 50%,transparent 100%);mix-blend-mode:screen}
-.blob-outer{width:100%;height:100%;top:0;left:0;background:radial-gradient(circle,rgba(239,68,68,.3) 20%,rgba(249,115,22,.5) 55%,rgba(220,38,38,.25) 75%,transparent 100%)}
-.blob-glow{position:absolute;width:130%;height:130%;top:-15%;left:-15%;border-radius:50%;background:radial-gradient(circle,transparent 35%,rgba(239,68,68,.18) 55%,transparent 75%);pointer-events:none;filter:blur(10px)}
-
-/* Orb overlay text */
-.orb-text{position:absolute;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.7);font-weight:300;z-index:3;pointer-events:none;text-align:center}
-
-/* Button */
-.cta-btn{margin-top:40px;padding:14px 36px;border:1px solid rgba(255,255,255,.15);border-radius:50px;background:rgba(255,255,255,.08);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:rgba(255,255,255,.85);font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:400;cursor:pointer;z-index:2;transition:background .3s,border-color .3s;outline:none;font-family:inherit}
-.cta-btn:active{background:rgba(255,255,255,.15)}
-
-/* Sub text */
-.sub-text{margin-top:16px;font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.25);z-index:2;text-align:center;min-height:14px}
-
-/* Blob morphing animations */
-@keyframes morph1{
-0%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%}
-25%{border-radius:40% 60% 70% 30%/70% 40% 30% 60%}
-50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%}
-75%{border-radius:55% 35% 50% 50%/40% 55% 45% 60%}
-100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%}
-}
-@keyframes morph2{
-0%{border-radius:50% 50% 40% 60%/55% 45% 55% 45%}
-33%{border-radius:65% 35% 55% 45%/45% 55% 40% 60%}
-66%{border-radius:35% 65% 45% 55%/60% 40% 55% 45%}
-100%{border-radius:50% 50% 40% 60%/55% 45% 55% 45%}
-}
-@keyframes morph3{
-0%{border-radius:45% 55% 60% 40%/50% 50% 45% 55%}
-50%{border-radius:55% 45% 35% 65%/60% 40% 60% 40%}
-100%{border-radius:45% 55% 60% 40%/50% 50% 45% 55%}
-}
-.blob-core{animation:morph1 8s ease-in-out infinite}
-.blob-mid{animation:morph2 10s ease-in-out infinite}
-.blob-outer{animation:morph3 12s ease-in-out infinite}
-
-@keyframes breathe{
-0%,100%{transform:scale(1)}
-50%{transform:scale(1.03)}
-}
-.orb-wrap{animation:breathe 5s ease-in-out infinite}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Georgia,'Times New Roman',serif}
+canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+#ui{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+#subtitle{font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:#777;margin-bottom:6px;font-weight:300}
+#title{font-size:44px;font-weight:300;color:#fff;margin-bottom:0;font-family:Georgia,serif}
+#centerLabel{position:absolute;font-size:13px;letter-spacing:.35em;text-transform:uppercase;color:rgba(255,255,255,.8);pointer-events:none}
+#btn{pointer-events:all;cursor:pointer;border:none;outline:none;background:rgba(200,180,160,.3);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:30px;padding:16px 40px;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#999;font-family:Georgia,serif;min-height:48px;min-width:48px;position:absolute;transition:color .3s}
+#btn:active{opacity:.8}
+#statusText{position:absolute;bottom:0;font-size:11px;color:#c8a050;letter-spacing:.15em;opacity:0;text-align:center;padding:0 20px}
 </style>
 </head>
 <body>
-<canvas id="stars"></canvas>
-<div id="app">
-  <div class="top-label">DAILY RITUAL</div>
-  <div class="title">Aura</div>
-  <div class="orb-wrap" id="orbWrap">
-    <div class="blob-glow" id="blobGlow"></div>
-    <div class="blob-container" id="blobContainer">
-      <div class="blob-layer blob-outer" id="blobOuter"></div>
-      <div class="blob-layer blob-mid" id="blobMid"></div>
-      <div class="blob-layer blob-core" id="blobCore"></div>
-    </div>
-    <div class="orb-text" id="orbText">RE-CALIBRATING</div>
-  </div>
-  <button class="cta-btn" id="ctaBtn">ACTIVATE FIELD</button>
-  <div class="sub-text" id="subText"></div>
+<canvas id="c"></canvas>
+<div id="ui">
+<div id="subtitle">D A I L Y &nbsp; R I T U A L</div>
+<div id="title">Aura</div>
+<div id="centerLabel">R E - C A L I B R A T I N G</div>
+<button id="btn">S Y N C H R O N I Z I N G . . .</button>
+<div id="statusText">Deep Recovery Active • M6 + M12 Locked</div>
 </div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const centerLabel=document.getElementById('centerLabel'),btn=document.getElementById('btn'),statusText=document.getElementById('statusText');
+let W,H,cx,cy,dpr;
+let state=0; // 0=calibrating, 1=transitioning to active, 2=active, 3=transitioning to calibrating
+let transition=0; // 0..1 interpolation
+let transStart=0;
+const TRANS_DUR=3500;
+
+function resize(){
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  W=window.innerWidth;H=window.innerHeight;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  cx=W/2;cy=H/2;
+  positionUI();
+}
+
+function positionUI(){
+  const r=getRadius();
+  centerLabel.style.top=(cy-8)+'px';
+  centerLabel.style.left='50%';
+  centerLabel.style.transform='translateX(-50%)';
+  btn.style.left='50%';
+  btn.style.transform='translateX(-50%)';
+  statusText.style.left='50%';
+  statusText.style.transform='translateX(-50%)';
+  updateButtonPos();
+}
+
+function updateButtonPos(){
+  const r=getRadius();
+  const t=getT();
+  // In state 1 (calibrating): button below blob. In active: inside lower orb area
+  const belowY=cy+r*0.55+30;
+  const insideY=cy+r*0.3;
+  const btnY=lerp(belowY,insideY,t);
+  btn.style.top=btnY+'px';
+  statusText.style.bottom=(H-cy-r*0.55-60)+'px';
+}
+
+function getRadius(){
+  const base=Math.min(W,H)*0.35;
+  const active=Math.min(W,H)*0.39;
+  return lerp(base,active,getT());
+}
+
+function getT(){
+  if(state===0)return 0;
+  if(state===2)return 1;
+  if(state===1)return transition;
+  if(state===3)return 1-transition;
+  return 0;
+}
+
+function lerp(a,b,t){return a+(b-a)*t}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+
 // Stars
-(function(){
-  const c=document.getElementById('stars'),ctx=c.getContext('2d');
-  let stars=[];
-  function resize(){c.width=innerWidth;c.height=innerHeight;init()}
-  function init(){
-    stars=[];
-    for(let i=0;i<120;i++) stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*.8+.2,a:Math.random()*.4+.1,d:Math.random()*Math.PI*2,s:Math.random()*.15+.05});
+const stars=[];
+for(let i=0;i<130;i++){
+  stars.push({
+    x:Math.random(),y:Math.random(),
+    size:Math.random()*2+0.5,
+    twinkleSpeed:Math.random()*2+1,
+    twinkleOffset:Math.random()*Math.PI*2,
+    driftX:(Math.random()-.5)*.00003,
+    driftY:(Math.random()-.5)*.00003,
+    brightness:Math.random()*.5+.5
+  });
+}
+
+function drawStars(time){
+  for(const s of stars){
+    s.x+=s.driftX;s.y+=s.driftY;
+    if(s.x<0)s.x=1;if(s.x>1)s.x=0;
+    if(s.y<0)s.y=1;if(s.y>1)s.y=0;
+    const twinkle=.5+.5*Math.sin(time*s.twinkleSpeed+s.twinkleOffset);
+    const a=s.brightness*(.4+.6*twinkle);
+    ctx.fillStyle=`rgba(255,255,255,${a})`;
+    ctx.beginPath();
+    ctx.arc(s.x*W,s.y*H,s.size,0,Math.PI*2);
+    ctx.fill();
   }
-  function draw(){
-    ctx.clearRect(0,0,c.width,c.height);
-    stars.forEach(s=>{
-      s.x+=Math.cos(s.d)*s.s*.15;
-      s.y+=Math.sin(s.d)*s.s*.15;
-      if(s.x<0)s.x=c.width;if(s.x>c.width)s.x=0;
-      if(s.y<0)s.y=c.height;if(s.y>c.height)s.y=0;
-      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-      ctx.fillStyle=`rgba(255,255,255,${s.a})`;ctx.fill();
-    });
-    requestAnimationFrame(draw);
+}
+
+// Blob elements for state 0
+const blobs=[];
+for(let i=0;i<8;i++){
+  blobs.push({
+    angle:Math.PI*2*i/8,
+    dist:.7+Math.random()*.3,
+    rx:.45+Math.random()*.15,
+    ry:.4+Math.random()*.15,
+    phase:Math.random()*Math.PI*2,
+    speed:.3+Math.random()*.4,
+    rot:Math.random()*Math.PI
+  });
+}
+const tealBlobs=[];
+for(let i=0;i<4;i++){
+  tealBlobs.push({
+    angle:Math.PI*2*i/4,
+    dist:.15+Math.random()*.1,
+    rx:.3+Math.random()*.1,
+    ry:.28+Math.random()*.1,
+    phase:Math.random()*Math.PI*2,
+    speed:.2+Math.random()*.3,
+    rot:Math.random()*Math.PI
+  });
+}
+
+// Surface dots for active orb
+const surfaceDots=[];
+for(let i=0;i<25;i++){
+  surfaceDots.push({
+    angle:Math.random()*Math.PI*2,
+    dist:Math.random()*.85,
+    size:Math.random()*1.5+.5,
+    speed:.1+Math.random()*.2,
+    phase:Math.random()*Math.PI*2
+  });
+}
+
+function drawBlob(time,t,radius){
+  // t=0: full blob, t=1: clean orb
+  ctx.save();
+  ctx.filter=`blur(${lerp(25,0,t)}px)`;
+  
+  // Red/coral outer blobs → orange/gold at t=1
+  for(const b of blobs){
+    const wobble=Math.sin(time*b.speed+b.phase);
+    const wobble2=Math.cos(time*b.speed*.7+b.phase+1);
+    const d=b.dist*radius*lerp(1,.01,t);
+    const bx=cx+Math.cos(b.angle+wobble*.3)*d;
+    const by=cy+Math.sin(b.angle+wobble2*.3)*d;
+    const rx=b.rx*radius*lerp(1,.01,t);
+    const ry=b.ry*radius*lerp(1,.01,t);
+    
+    // Color: red/coral → orange/gold
+    const r=Math.round(lerp(255,255,t));
+    const g=Math.round(lerp(40,153,t));
+    const b2=Math.round(lerp(20,51,t));
+    const alpha=lerp(.6,.0,t);
+    
+    ctx.fillStyle=`rgba(${r},${g},${b2},${alpha})`;
+    ctx.beginPath();
+    ctx.ellipse(bx,by,Math.max(1,rx),Math.max(1,ry),b.rot+wobble*.1,0,Math.PI*2);
+    ctx.fill();
   }
-  resize();draw();
-  addEventListener('resize',resize);
-})();
+  
+  // Teal center blobs → white at t=1
+  for(const b of tealBlobs){
+    const wobble=Math.sin(time*b.speed+b.phase);
+    const d=b.dist*radius*lerp(1,.02,t);
+    const bx=cx+Math.cos(b.angle+wobble*.2)*d;
+    const by=cy+Math.sin(b.angle+wobble*.2)*d;
+    const rx=b.rx*radius*lerp(1,.02,t);
+    const ry=b.ry*radius*lerp(1,.02,t);
+    
+    const r=Math.round(lerp(26,240,t));
+    const g=Math.round(lerp(138,240,t));
+    const b2=Math.round(lerp(122,245,t));
+    const alpha=lerp(.7,.0,t);
+    
+    ctx.fillStyle=`rgba(${r},${g},${b2},${alpha})`;
+    ctx.beginPath();
+    ctx.ellipse(bx,by,Math.max(1,rx),Math.max(1,ry),b.rot,0,Math.PI*2);
+    ctx.fill();
+  }
+  ctx.filter='none';
+  ctx.restore();
+}
+
+function drawOrb(time,t,radius){
+  if(t<=0)return;
+  const breath=1+Math.sin(time*.8)*.03*t;
+  const r=radius*breath;
+  
+  ctx.save();
+  // Outer gold/orange corona
+  const outerGrad=ctx.createRadialGradient(cx,cy,r*.7,cx,cy,r*1.4);
+  outerGrad.addColorStop(0,'rgba(255,180,80,0)');
+  outerGrad.addColorStop(.5,`rgba(255,153,51,${.35*t})`);
+  outerGrad.addColorStop(.7,`rgba(255,120,30,${.2*t})`);
+  outerGrad.addColorStop(1,'rgba(255,100,20,0)');
+  ctx.fillStyle=outerGrad;
+  ctx.beginPath();ctx.arc(cx,cy,r*1.4,0,Math.PI*2);ctx.fill();
+  
+  // Second corona layer
+  const corona2=ctx.createRadialGradient(cx,cy,r*.8,cx,cy,r*1.15);
+  corona2.addColorStop(0,'rgba(255,220,180,0)');
+  corona2.addColorStop(.6,`rgba(255,200,140,${.3*t})`);
+  corona2.addColorStop(1,'rgba(255,160,80,0)');
+  ctx.fillStyle=corona2;
+  ctx.beginPath();ctx.arc(cx,cy,r*1.15,0,Math.PI*2);ctx.fill();
+  
+  // Main orb body
+  const mainGrad=ctx.createRadialGradient(cx-r*.1,cy-r*.1,0,cx,cy,r);
+  mainGrad.addColorStop(0,`rgba(255,255,255,${t})`);
+  mainGrad.addColorStop(.3,`rgba(240,238,235,${t*.95})`);
+  mainGrad.addColorStop(.7,`rgba(220,210,200,${t*.8})`);
+  mainGrad.addColorStop(.9,`rgba(200,180,150,${t*.5})`);
+  mainGrad.addColorStop(1,`rgba(180,150,100,0)`);
+  ctx.fillStyle=mainGrad;
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  
+  // Pearl highlight
+  const hlGrad=ctx.createRadialGradient(cx-r*.2,cy-r*.25,0,cx-r*.15,cy-r*.2,r*.4);
+  hlGrad.addColorStop(0,`rgba(255,255,255,${.7*t})`);
+  hlGrad.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=hlGrad;
+  ctx.beginPath();ctx.arc(cx-r*.15,cy-r*.2,r*.4,0,Math.PI*2);ctx.fill();
+  
+  // Surface dots
+  for(const d of surfaceDots){
+    const a=d.angle+time*d.speed;
+    const dd=d.dist*r;
+    const dx=cx+Math.cos(a)*dd;
+    const dy=cy+Math.sin(a)*dd;
+    ctx.fillStyle=`rgba(255,255,255,${.4*t})`;
+    ctx.beginPath();ctx.arc(dx,dy,d.size,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
 
 // Audio
-let audioCtx,osc,gain;
+let audioCtx,osc1,osc2,gainNode;
 function startAudio(){
   if(audioCtx)return;
   audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  osc=audioCtx.createOscillator();gain=audioCtx.createGain();
-  osc.type='sine';osc.frequency.value=136.1;
-  gain.gain.value=0;
-  osc.connect(gain);gain.connect(audioCtx.destination);
-  osc.start();
+  gainNode=audioCtx.createGain();
+  gainNode.gain.value=0;
+  gainNode.connect(audioCtx.destination);
+  osc1=audioCtx.createOscillator();osc1.type='sine';osc1.frequency.value=136.1;
+  osc2=audioCtx.createOscillator();osc2.type='sine';osc2.frequency.value=272.2;
+  const g2=audioCtx.createGain();g2.gain.value=.3;
+  osc1.connect(gainNode);osc2.connect(g2);g2.connect(gainNode);
+  osc1.start();osc2.start();
 }
+function fadeAudioIn(){startAudio();gainNode.gain.cancelScheduledValues(audioCtx.currentTime);gainNode.gain.linearRampToValueAtTime(.12,audioCtx.currentTime+3)}
+function fadeAudioOut(){if(!audioCtx)return;gainNode.gain.cancelScheduledValues(audioCtx.currentTime);gainNode.gain.linearRampToValueAtTime(0,audioCtx.currentTime+3)}
 
 // State machine
-let state='initial'; // initial | syncing | active
-const btn=document.getElementById('ctaBtn');
-const orbText=document.getElementById('orbText');
-const subText=document.getElementById('subText');
-const blobCore=document.getElementById('blobCore');
-const blobMid=document.getElementById('blobMid');
-const blobOuter=document.getElementById('blobOuter');
-const blobGlow=document.getElementById('blobGlow');
-const blobContainer=document.getElementById('blobContainer');
-const orbWrap=document.getElementById('orbWrap');
-
 btn.addEventListener('click',()=>{
-  if(state==='syncing')return;
-  startAudio();
-  if(state==='initial') activate();
-  else deactivate();
+  if(state===0){
+    state=1;transition=0;transStart=performance.now();
+    fadeAudioIn();
+    gsap.to(centerLabel,{opacity:0,duration:1});
+    btn.textContent='A C T I V A T I N G . . .';
+    btn.style.color='#cba050';
+  }else if(state===2){
+    state=3;transition=0;transStart=performance.now();
+    fadeAudioOut();
+    gsap.to(statusText,{opacity:0,duration:1});
+    btn.textContent='D E A C T I V A T I N G . . .';
+  }
 });
 
-function activate(){
-  state='syncing';
-  btn.textContent='SYNCHRONIZING...';
-  btn.style.pointerEvents='none';
-  orbText.textContent='SYNCHRONIZING';
-
-  // Fade audio in
-  if(gain) gain.gain.linearRampToValueAtTime(.06,audioCtx.currentTime+3);
-
-  // Transition blob to white/pearl orb
-  const tl=gsap.timeline({onComplete:()=>{
-    state='active';
-    btn.textContent='DEACTIVATE FIELD';
-    btn.style.pointerEvents='auto';
-    orbText.textContent='FIELD ACTIVE';
-    subText.textContent='Deep Recovery Active • M3 + M4 + M12 Locked';
-  }});
-
-  tl.to(blobCore,{background:'radial-gradient(circle,#fff 0%,#e8e0d4 60%,transparent 100%)',duration:3,ease:'power2.inOut'},0);
-  tl.to(blobMid,{background:'radial-gradient(circle,rgba(255,255,255,.6) 0%,rgba(255,240,220,.4) 50%,transparent 100%)',duration:3,ease:'power2.inOut'},0);
-  tl.to(blobOuter,{background:'radial-gradient(circle,rgba(255,250,240,.35) 20%,rgba(255,200,120,.3) 55%,rgba(255,180,80,.15) 75%,transparent 100%)',duration:3,ease:'power2.inOut'},0);
-  tl.to(blobGlow,{background:'radial-gradient(circle,transparent 30%,rgba(255,180,80,.22) 55%,rgba(255,140,40,.1) 70%,transparent 85%)',duration:3,ease:'power2.inOut'},0);
-
-  // Make it rounder
-  tl.to([blobCore,blobMid,blobOuter],{borderRadius:'50%',duration:3,ease:'power2.inOut'},0);
-
-  // Increase contrast less for softer look
-  tl.to(blobContainer,{filter:'blur(22px) contrast(1.15)',duration:3,ease:'power2.inOut'},0);
+function frame(now){
+  const time=now*.001;
+  
+  // Update transition
+  if(state===1||state===3){
+    transition=clamp((now-transStart)/TRANS_DUR,0,1);
+    if(transition>=1){
+      if(state===1){
+        state=2;
+        btn.textContent='D E A C T I V A T E   F I E L D';
+        btn.style.color='#bbb';
+        gsap.to(statusText,{opacity:1,duration:1.5});
+      }else{
+        state=0;
+        centerLabel.style.opacity='1';
+        btn.textContent='S Y N C H R O N I Z I N G . . .';
+        btn.style.color='#999';
+      }
+    }
+  }
+  
+  const t=getT();
+  const radius=getRadius();
+  updateButtonPos();
+  
+  ctx.clearRect(0,0,W,H);
+  drawStars(time);
+  drawBlob(time,t,radius);
+  drawOrb(time,t,radius);
+  
+  requestAnimationFrame(frame);
 }
 
-function deactivate(){
-  state='syncing';
-  btn.textContent='SYNCHRONIZING...';
-  btn.style.pointerEvents='none';
-  subText.textContent='';
-  orbText.textContent='RE-CALIBRATING';
-
-  if(gain) gain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+1.5);
-
-  const tl=gsap.timeline({onComplete:()=>{
-    state='initial';
-    btn.textContent='ACTIVATE FIELD';
-    btn.style.pointerEvents='auto';
-    // Restart morph animations by re-adding classes
-    [blobCore,blobMid,blobOuter].forEach(el=>{
-      el.style.borderRadius='';
-      el.style.animation='none';
-      el.offsetHeight; // reflow
-      el.style.animation='';
-    });
-  }});
-
-  tl.to(blobCore,{background:'radial-gradient(circle,#2dd4bf 0%,#0d9488 60%,transparent 100%)',duration:2,ease:'power2.inOut'},0);
-  tl.to(blobMid,{background:'radial-gradient(circle,rgba(20,184,166,.5) 0%,rgba(239,68,68,.45) 50%,transparent 100%)',duration:2,ease:'power2.inOut'},0);
-  tl.to(blobOuter,{background:'radial-gradient(circle,rgba(239,68,68,.3) 20%,rgba(249,115,22,.5) 55%,rgba(220,38,38,.25) 75%,transparent 100%)',duration:2,ease:'power2.inOut'},0);
-  tl.to(blobGlow,{background:'radial-gradient(circle,transparent 35%,rgba(239,68,68,.18) 55%,transparent 75%)',duration:2,ease:'power2.inOut'},0);
-  tl.to(blobContainer,{filter:'blur(18px) contrast(1.4)',duration:2,ease:'power2.inOut'},0);
-}
+window.addEventListener('resize',resize);
+resize();
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>
