@@ -3,312 +3,217 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>Aura — Daily Ritual</title>
+<title>Aura</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Georgia,'Times New Roman',serif}
-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
-#ui{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;gap:0}
-#topSection{position:absolute;top:max(12vh,60px);left:0;width:100%;text-align:center}
-#subtitle{font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:#777;margin-bottom:6px;font-weight:300}
-#title{font-size:44px;font-weight:300;color:#fff;margin-bottom:0;font-family:Georgia,serif}
-#centerLabel{font-size:13px;letter-spacing:.35em;text-transform:uppercase;color:rgba(255,255,255,.8);pointer-events:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-#bottomSection{position:absolute;bottom:max(8vh,40px);left:0;width:100%;display:flex;flex-direction:column;align-items:center;gap:12px}
-#btn{pointer-events:all;cursor:pointer;border:none;outline:none;background:rgba(200,180,160,.3);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:30px;padding:16px 40px;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#999;font-family:Georgia,serif;min-height:48px;min-width:48px;transition:color .3s}
-#btn:active{opacity:.8}
-#statusText{font-size:11px;color:#c8a050;letter-spacing:.15em;opacity:0;text-align:center;padding:0 20px}
+canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1}
+#ui{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:center}
+#topLabel{position:absolute;top:max(12vh,60px);font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:10px;letter-spacing:.4em;color:#555;text-transform:uppercase}
+#title{position:absolute;top:calc(max(12vh,60px) + 28px);font-size:44px;color:#fff;font-weight:300;opacity:.9}
+#recal{position:absolute;top:50%;left:50%;transform:translate(-50%,80px);font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:9px;letter-spacing:.35em;color:rgba(255,255,255,.15);text-transform:uppercase;transition:opacity .8s}
+#btn{position:absolute;bottom:max(8vh,40px);pointer-events:all;background:rgba(255,255,255,.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:40px;padding:14px 36px;color:#fff;font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.3em;cursor:pointer;transition:background .3s,border-color .3s;user-select:none;-webkit-tap-highlight-color:transparent}
+#btn:active{background:rgba(255,255,255,.15)}
+#status{position:absolute;bottom:calc(max(8vh,40px) - 28px);font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:9px;letter-spacing:.15em;color:rgba(255,255,255,.4);opacity:0;transition:opacity .8s}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="ui">
-<div id="topSection">
-<div id="subtitle">D A I L Y &nbsp; R I T U A L</div>
+<div id="topLabel">DAILY RITUAL</div>
 <div id="title">Aura</div>
-</div>
-<div id="centerLabel">R E - C A L I B R A T I N G</div>
-<div id="bottomSection">
+<div id="recal">RE-CALIBRATING</div>
 <button id="btn">A C T I V A T E &nbsp; F I E L D</button>
-<div id="statusText">Deep Recovery Active • M6 + M12 Locked</div>
+<div id="status">Deep Recovery Active • M6 + M12 Locked</div>
 </div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
-const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
-const centerLabel=document.getElementById('centerLabel'),btn=document.getElementById('btn'),statusText=document.getElementById('statusText');
-let W,H,cx,cy,dpr;
-let state=0; // 0=calibrating, 1=transitioning to active, 2=active, 3=transitioning to calibrating
-let transition=0; // 0..1 interpolation
-let transStart=0;
-const TRANS_DUR=3500;
+const V=`attribute vec2 a_pos;void main(){gl_Position=vec4(a_pos,0,1);}`;
+const F=`
+precision highp float;
+uniform float u_time;
+uniform float u_tr;
+uniform vec2 u_res;
 
-function resize(){
-  dpr=Math.min(window.devicePixelRatio||1,2);
-  W=window.innerWidth;H=window.innerHeight;
-  canvas.width=W*dpr;canvas.height=H*dpr;
-  canvas.style.width=W+'px';canvas.style.height=H+'px';
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  cx=W/2;cy=H/2;
-  positionUI();
+vec3 mod289(vec3 x){return x-floor(x*(1./289.))*289.;}
+vec2 mod289(vec2 x){return x-floor(x*(1./289.))*289.;}
+vec3 permute(vec3 x){return mod289((x*34.+1.)*x);}
+float snoise(vec2 v){
+  const vec4 C=vec4(.211324865405187,.366025403784439,-.577350269189626,.024390243902439);
+  vec2 i=floor(v+dot(v,C.yy)),x0=v-i+dot(i,C.xx),i1;
+  i1=(x0.x>x0.y)?vec2(1,0):vec2(0,1);
+  vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;
+  i=mod289(i);
+  vec3 p=permute(permute(i.y+vec3(0,i1.y,1.))+i.x+vec3(0,i1.x,1.));
+  vec3 m=max(.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.);
+  m=m*m;m=m*m;
+  vec3 x=2.*fract(p*C.www)-1.,h=abs(x)-.5,ox=floor(x+.5),a0=x-ox;
+  m*=1.79284291400159-.85373472095314*(a0*a0+h*h);
+  vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;
+  return 130.*dot(m,g);
+}
+float fbm(vec2 p){
+  float v=0.,a=.5;
+  mat2 r=mat2(cos(.5),sin(.5),-sin(.5),cos(.5));
+  for(int i=0;i<6;i++){v+=a*snoise(p);p=r*p*2.1;a*=.48;}
+  return v;
 }
 
-function positionUI(){
-  // Layout is handled by CSS flex/absolute positioning now
-}
+void main(){
+  vec2 uv=(gl_FragCoord.xy-.5*u_res)/min(u_res.x,u_res.y);
+  float t=u_time;
+  float tr=u_tr;
+  float dist=length(uv);
 
-function getRadius(){
-  const base=Math.min(W,H)*0.35;
-  const active=Math.min(W,H)*0.39;
-  return lerp(base,active,getT());
-}
+  // Organic noise for blob edges
+  float angle=atan(uv.y,uv.x);
+  vec2 np=vec2(cos(angle),sin(angle))*2.5+t*.18;
+  float n1=fbm(np+vec2(t*.12,t*.08));
+  float n2=fbm(uv*3.2+vec2(t*.15,-t*.1));
+  float n3=fbm(uv*5.5+vec2(-t*.08,t*.2));
 
-function getT(){
-  if(state===0)return 0;
-  if(state===2)return 1;
-  if(state===1)return transition;
-  if(state===3)return 1-transition;
-  return 0;
-}
+  // Blob edge distortion - strong in initial, subtle in active
+  float noiseAmp=mix(.1,.008,tr);
+  float edgeNoise=n1*.6+n2*.3+n3*.1;
+  float blobR=mix(.32,.36,tr)+edgeNoise*noiseAmp;
 
-function lerp(a,b,t){return a+(b-a)*t}
-function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+  // Breathing in active state
+  float breathe=sin(t*.8)*.012*tr;
+  blobR+=breathe;
 
-// Stars
-const stars=[];
-for(let i=0;i<130;i++){
-  stars.push({
-    x:Math.random(),y:Math.random(),
-    size:Math.random()*2+0.5,
-    twinkleSpeed:Math.random()*2+1,
-    twinkleOffset:Math.random()*Math.PI*2,
-    driftX:(Math.random()-.5)*.00003,
-    driftY:(Math.random()-.5)*.00003,
-    brightness:Math.random()*.5+.5
-  });
-}
+  // Jagged flame tendrils for initial state
+  float tendrilNoise=fbm(vec2(angle*2.5+t*.3,dist*4.+t*.2));
+  float tendrils=tendrilNoise*mix(.08,0.,tr)*smoothstep(.5,.25,dist);
 
-function drawStars(time){
-  for(const s of stars){
-    s.x+=s.driftX;s.y+=s.driftY;
-    if(s.x<0)s.x=1;if(s.x>1)s.x=0;
-    if(s.y<0)s.y=1;if(s.y>1)s.y=0;
-    const twinkle=.5+.5*Math.sin(time*s.twinkleSpeed+s.twinkleOffset);
-    const a=s.brightness*(.4+.6*twinkle);
-    ctx.fillStyle=`rgba(255,255,255,${a})`;
-    ctx.beginPath();
-    ctx.arc(s.x*W,s.y*H,s.size,0,Math.PI*2);
-    ctx.fill();
+  // Shape with soft edge
+  float edgeWidth=mix(.07,.03,tr);
+  float shape=smoothstep(blobR+edgeWidth,blobR-edgeWidth*.5,dist-tendrils);
+
+  // Colors - initial state
+  vec3 tealCore=vec3(.05,.52,.46);
+  vec3 darkMid=vec3(.08,.12,.12);
+  vec3 redAura=vec3(.95,.15,.08);
+  vec3 deepRed=vec3(.6,.05,.02);
+
+  // Colors - active state
+  vec3 whiteCore=vec3(.97,.95,.92);
+  vec3 warmWhite=vec3(.92,.88,.82);
+  vec3 goldRim=vec3(1.,.55,.15);
+  vec3 softGold=vec3(.8,.4,.1);
+
+  // Radial color mapping - initial
+  float coreZone=smoothstep(.28,.0,dist);
+  float midZone=smoothstep(.35,.15,dist);
+  float auraZone=smoothstep(.45,.25,dist);
+
+  vec3 initColor=mix(deepRed,redAura,auraZone);
+  initColor=mix(initColor,darkMid,midZone);
+  initColor=mix(initColor,tealCore,coreZone);
+
+  // Add noise-based color variation to initial state
+  float colorNoise=fbm(uv*4.+t*.1)*.15;
+  initColor+=colorNoise*vec3(-.05,.08,.06)*midZone*(1.-tr);
+
+  // Active color
+  vec3 actColor=mix(softGold,goldRim,smoothstep(.4,.28,dist));
+  actColor=mix(actColor,warmWhite,smoothstep(.32,.12,dist));
+  actColor=mix(actColor,whiteCore,smoothstep(.2,.0,dist));
+
+  // Bright center glow in active
+  float centerGlow=exp(-dist*dist*18.)*tr;
+  actColor+=vec3(.3,.28,.22)*centerGlow;
+
+  vec3 color=mix(initColor,actColor,tr);
+
+  // Outer glow/aura beyond the shape
+  float outerGlow=smoothstep(.55,.2,dist)*smoothstep(blobR-.02,blobR+.15,dist);
+  vec3 glowColor=mix(vec3(.8,.1,.05),vec3(.9,.5,.1),tr);
+  float glowNoise=fbm(vec2(angle*3.+t*.2,t*.15))*.5+.5;
+  outerGlow*=mix(glowNoise,.85,tr);
+
+  // Flame-like outer tendrils for initial
+  float flameDist=dist-blobR;
+  float flames=0.;
+  if(flameDist>0.&&flameDist<.2){
+    float fn=fbm(vec2(angle*4.+t*.5,flameDist*15.-t*.8));
+    flames=fn*smoothstep(.2,0.,flameDist)*(1.-tr)*.6;
   }
-}
 
-// Blob elements for state 0
-const blobs=[];
-for(let i=0;i<8;i++){
-  blobs.push({
-    angle:Math.PI*2*i/8,
-    dist:.7+Math.random()*.3,
-    rx:.45+Math.random()*.15,
-    ry:.4+Math.random()*.15,
-    phase:Math.random()*Math.PI*2,
-    speed:.3+Math.random()*.4,
-    rot:Math.random()*Math.PI
-  });
-}
-const tealBlobs=[];
-for(let i=0;i<4;i++){
-  tealBlobs.push({
-    angle:Math.PI*2*i/4,
-    dist:.15+Math.random()*.1,
-    rx:.3+Math.random()*.1,
-    ry:.28+Math.random()*.1,
-    phase:Math.random()*Math.PI*2,
-    speed:.2+Math.random()*.3,
-    rot:Math.random()*Math.PI
-  });
-}
+  // Combine
+  float alpha=shape+outerGlow*.5+flames;
+  alpha=clamp(alpha,0.,1.);
+  vec3 finalColor=color*shape+glowColor*(outerGlow*.5+flames);
 
-// Surface dots for active orb
-const surfaceDots=[];
-for(let i=0;i<25;i++){
-  surfaceDots.push({
-    angle:Math.random()*Math.PI*2,
-    dist:Math.random()*.85,
-    size:Math.random()*1.5+.5,
-    speed:.1+Math.random()*.2,
-    phase:Math.random()*Math.PI*2
-  });
-}
-
-function drawBlob(time,t,radius){
-  // t=0: full blob, t=1: clean orb
-  ctx.save();
-  ctx.filter=`blur(${lerp(25,0,t)}px)`;
-  
-  // Red/coral outer blobs → orange/gold at t=1
-  for(const b of blobs){
-    const wobble=Math.sin(time*b.speed+b.phase);
-    const wobble2=Math.cos(time*b.speed*.7+b.phase+1);
-    const d=b.dist*radius*lerp(1,.01,t);
-    const bx=cx+Math.cos(b.angle+wobble*.3)*d;
-    const by=cy+Math.sin(b.angle+wobble2*.3)*d;
-    const rx=b.rx*radius*lerp(1,.01,t);
-    const ry=b.ry*radius*lerp(1,.01,t);
-    
-    // Color: red/coral → orange/gold
-    const r=Math.round(lerp(255,255,t));
-    const g=Math.round(lerp(40,153,t));
-    const b2=Math.round(lerp(20,51,t));
-    const alpha=lerp(.6,.0,t);
-    
-    ctx.fillStyle=`rgba(${r},${g},${b2},${alpha})`;
-    ctx.beginPath();
-    ctx.ellipse(bx,by,Math.max(1,rx),Math.max(1,ry),b.rot+wobble*.1,0,Math.PI*2);
-    ctx.fill();
+  // Stars
+  vec2 starUV=gl_FragCoord.xy/u_res;
+  float stars=0.;
+  for(float i=0.;i<120.;i++){
+    vec2 sp=vec2(fract(sin(i*127.1)*311.7),fract(sin(i*269.5)*183.3));
+    float d=length(starUV-sp);
+    float twinkle=sin(t*(.8+fract(sin(i*43.1)*191.9)*2.))*0.3+0.7;
+    stars+=smoothstep(.0015,0.,d)*twinkle*.6;
   }
-  
-  // Teal center blobs → white at t=1
-  for(const b of tealBlobs){
-    const wobble=Math.sin(time*b.speed+b.phase);
-    const d=b.dist*radius*lerp(1,.02,t);
-    const bx=cx+Math.cos(b.angle+wobble*.2)*d;
-    const by=cy+Math.sin(b.angle+wobble*.2)*d;
-    const rx=b.rx*radius*lerp(1,.02,t);
-    const ry=b.ry*radius*lerp(1,.02,t);
-    
-    const r=Math.round(lerp(26,240,t));
-    const g=Math.round(lerp(138,240,t));
-    const b2=Math.round(lerp(122,245,t));
-    const alpha=lerp(.7,.0,t);
-    
-    ctx.fillStyle=`rgba(${r},${g},${b2},${alpha})`;
-    ctx.beginPath();
-    ctx.ellipse(bx,by,Math.max(1,rx),Math.max(1,ry),b.rot,0,Math.PI*2);
-    ctx.fill();
-  }
-  ctx.filter='none';
-  ctx.restore();
-}
+  finalColor+=vec3(stars)*(1.-alpha*.8);
+  alpha=max(alpha,stars*.3);
 
-function drawOrb(time,t,radius){
-  if(t<=0)return;
-  const breath=1+Math.sin(time*.8)*.03*t;
-  const r=radius*breath;
-  
-  ctx.save();
-  // Outer gold/orange corona
-  const outerGrad=ctx.createRadialGradient(cx,cy,r*.7,cx,cy,r*1.4);
-  outerGrad.addColorStop(0,'rgba(255,180,80,0)');
-  outerGrad.addColorStop(.5,`rgba(255,153,51,${.35*t})`);
-  outerGrad.addColorStop(.7,`rgba(255,120,30,${.2*t})`);
-  outerGrad.addColorStop(1,'rgba(255,100,20,0)');
-  ctx.fillStyle=outerGrad;
-  ctx.beginPath();ctx.arc(cx,cy,r*1.4,0,Math.PI*2);ctx.fill();
-  
-  // Second corona layer
-  const corona2=ctx.createRadialGradient(cx,cy,r*.8,cx,cy,r*1.15);
-  corona2.addColorStop(0,'rgba(255,220,180,0)');
-  corona2.addColorStop(.6,`rgba(255,200,140,${.3*t})`);
-  corona2.addColorStop(1,'rgba(255,160,80,0)');
-  ctx.fillStyle=corona2;
-  ctx.beginPath();ctx.arc(cx,cy,r*1.15,0,Math.PI*2);ctx.fill();
-  
-  // Main orb body
-  const mainGrad=ctx.createRadialGradient(cx-r*.1,cy-r*.1,0,cx,cy,r);
-  mainGrad.addColorStop(0,`rgba(255,255,255,${t})`);
-  mainGrad.addColorStop(.3,`rgba(240,238,235,${t*.95})`);
-  mainGrad.addColorStop(.7,`rgba(220,210,200,${t*.8})`);
-  mainGrad.addColorStop(.9,`rgba(200,180,150,${t*.5})`);
-  mainGrad.addColorStop(1,`rgba(180,150,100,0)`);
-  ctx.fillStyle=mainGrad;
-  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
-  
-  // Pearl highlight
-  const hlGrad=ctx.createRadialGradient(cx-r*.2,cy-r*.25,0,cx-r*.15,cy-r*.2,r*.4);
-  hlGrad.addColorStop(0,`rgba(255,255,255,${.7*t})`);
-  hlGrad.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=hlGrad;
-  ctx.beginPath();ctx.arc(cx-r*.15,cy-r*.2,r*.4,0,Math.PI*2);ctx.fill();
-  
-  // Surface dots
-  for(const d of surfaceDots){
-    const a=d.angle+time*d.speed;
-    const dd=d.dist*r;
-    const dx=cx+Math.cos(a)*dd;
-    const dy=cy+Math.sin(a)*dd;
-    ctx.fillStyle=`rgba(255,255,255,${.4*t})`;
-    ctx.beginPath();ctx.arc(dx,dy,d.size,0,Math.PI*2);ctx.fill();
-  }
-  ctx.restore();
-}
+  gl_FragColor=vec4(finalColor,1.);
+}`;
 
-// Audio
-let audioCtx,osc1,osc2,gainNode;
+const c=document.getElementById('c'),gl=c.getContext('webgl',{antialias:true,alpha:false});
+function resize(){c.width=innerWidth*devicePixelRatio;c.height=innerHeight*devicePixelRatio;gl.viewport(0,0,c.width,c.height);}
+resize();addEventListener('resize',resize);
+
+function compile(t,s){const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(sh));return sh;}
+const pg=gl.createProgram();
+gl.attachShader(pg,compile(gl.VERTEX_SHADER,V));
+gl.attachShader(pg,compile(gl.FRAGMENT_SHADER,F));
+gl.linkProgram(pg);gl.useProgram(pg);
+
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+const aPos=gl.getAttribLocation(pg,'a_pos');gl.enableVertexAttribArray(aPos);gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);
+
+const uTime=gl.getUniformLocation(pg,'u_time'),uTr=gl.getUniformLocation(pg,'u_tr'),uRes=gl.getUniformLocation(pg,'u_res');
+
+let transition={v:0},state=0,audioCtx,g1,g2;
+const btn=document.getElementById('btn'),statusEl=document.getElementById('status'),recalEl=document.getElementById('recal');
+
 function startAudio(){
   if(audioCtx)return;
   audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  gainNode=audioCtx.createGain();
-  gainNode.gain.value=0;
-  gainNode.connect(audioCtx.destination);
-  osc1=audioCtx.createOscillator();osc1.type='sine';osc1.frequency.value=136.1;
-  osc2=audioCtx.createOscillator();osc2.type='sine';osc2.frequency.value=272.2;
-  const g2=audioCtx.createGain();g2.gain.value=.3;
-  osc1.connect(gainNode);osc2.connect(g2);g2.connect(gainNode);
-  osc1.start();osc2.start();
+  const o1=audioCtx.createOscillator(),o2=audioCtx.createOscillator();
+  g1=audioCtx.createGain();g2=audioCtx.createGain();
+  o1.frequency.value=136.1;o2.frequency.value=272.2;
+  o1.type='sine';o2.type='sine';
+  g1.gain.value=0;g2.gain.value=0;
+  o1.connect(g1).connect(audioCtx.destination);
+  o2.connect(g2).connect(audioCtx.destination);
+  o1.start();o2.start();
 }
-function fadeAudioIn(){startAudio();gainNode.gain.cancelScheduledValues(audioCtx.currentTime);gainNode.gain.linearRampToValueAtTime(.12,audioCtx.currentTime+3)}
-function fadeAudioOut(){if(!audioCtx)return;gainNode.gain.cancelScheduledValues(audioCtx.currentTime);gainNode.gain.linearRampToValueAtTime(0,audioCtx.currentTime+3)}
 
-// State machine
 btn.addEventListener('click',()=>{
+  startAudio();
   if(state===0){
-    state=1;transition=0;transStart=performance.now();
-    fadeAudioIn();
-    gsap.to(centerLabel,{opacity:0,duration:1});
-    btn.textContent='A C T I V A T I N G . . .';
-    btn.style.color='#cba050';
+    state=1;btn.textContent='S Y N C H R O N I Z I N G . . .';recalEl.style.opacity='0';
+    gsap.to(transition,{v:1,duration:3.5,ease:'power2.inOut',onComplete:()=>{state=2;btn.textContent='D E A C T I V A T E   F I E L D';statusEl.style.opacity='1';}});
+    g1.gain.linearRampToValueAtTime(.06,audioCtx.currentTime+2);
+    g2.gain.linearRampToValueAtTime(.03,audioCtx.currentTime+2.5);
   }else if(state===2){
-    state=3;transition=0;transStart=performance.now();
-    fadeAudioOut();
-    gsap.to(statusText,{opacity:0,duration:1});
-    btn.textContent='D E A C T I V A T I N G . . .';
+    state=3;btn.textContent='S Y N C H R O N I Z I N G . . .';statusEl.style.opacity='0';
+    gsap.to(transition,{v:0,duration:3.5,ease:'power2.inOut',onComplete:()=>{state=0;btn.textContent='A C T I V A T E \u00a0 F I E L D';recalEl.style.opacity='1';}});
+    g1.gain.linearRampToValueAtTime(0,audioCtx.currentTime+2);
+    g2.gain.linearRampToValueAtTime(0,audioCtx.currentTime+2.5);
   }
 });
 
-function frame(now){
-  const time=now*.001;
-  
-  // Update transition
-  if(state===1||state===3){
-    transition=clamp((now-transStart)/TRANS_DUR,0,1);
-    if(transition>=1){
-      if(state===1){
-        state=2;
-        btn.textContent='D E A C T I V A T E   F I E L D';
-        btn.style.color='#bbb';
-        gsap.to(statusText,{opacity:1,duration:1.5});
-      }else{
-        state=0;
-        centerLabel.style.opacity='1';
-        btn.textContent='A C T I V A T E   F I E L D';
-        btn.style.color='#999';
-      }
-    }
-  }
-  
-  const t=getT();
-  const radius=getRadius();
-  
-  ctx.clearRect(0,0,W,H);
-  drawStars(time);
-  drawBlob(time,t,radius);
-  drawOrb(time,t,radius);
-  
-  requestAnimationFrame(frame);
+function draw(t){
+  gl.uniform1f(uTime,t*.001);
+  gl.uniform1f(uTr,transition.v);
+  gl.uniform2f(uRes,c.width,c.height);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  requestAnimationFrame(draw);
 }
-
-window.addEventListener('resize',resize);
-resize();
-requestAnimationFrame(frame);
+requestAnimationFrame(draw);
 </script>
 </body>
 </html>
