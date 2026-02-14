@@ -2,478 +2,249 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Deep Recovery Pad</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#080c18;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",sans-serif;color:#fff;touch-action:none;-webkit-tap-highlight-color:transparent}
-#canvas3d{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
-#ui{position:fixed;top:0;left:0;width:100%;height:100%;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:5vh 5vw;pointer-events:none}
-#headline{position:fixed;top:8vh;left:50%;transform:translateX(-50%);text-align:center;font-size:clamp(18px,3.5vw,32px);font-weight:300;letter-spacing:.04em;opacity:0;transition:opacity .8s;width:90%;line-height:1.4}
-#headline span{display:block;font-size:clamp(12px,2vw,16px);opacity:.5;margin-top:8px;font-weight:400;letter-spacing:.08em;text-transform:uppercase}
-.btn-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:4vh}
-.btn{pointer-events:auto;padding:18px 48px;border:none;border-radius:60px;font-size:clamp(14px,2.2vw,18px);font-weight:600;letter-spacing:.06em;cursor:pointer;transition:transform .2s,opacity .2s;opacity:0;font-family:inherit}
-.btn:active{transform:scale(.95)}
-.btn-primary{background:linear-gradient(135deg,#4facfe,#00f2fe);color:#080c18}
-.btn-secondary{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
-.btn-cta{background:linear-gradient(135deg,#f5af19,#f12711);color:#fff}
-#gyro-btn{position:fixed;top:16px;right:16px;pointer-events:auto;padding:10px 18px;border-radius:30px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);font-size:12px;cursor:pointer;opacity:0;z-index:20;font-family:inherit}
-#day-counter{position:fixed;top:8vh;right:8vw;font-size:clamp(28px,5vw,56px);font-weight:200;opacity:0;transition:opacity .6s;letter-spacing:-.02em}
-#day-counter small{font-size:40%;opacity:.4;font-weight:400}
-#sound-btn{position:fixed;bottom:16px;right:16px;pointer-events:auto;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);font-size:16px;cursor:pointer;z-index:20;display:flex;align-items:center;justify-content:center;font-family:inherit}
+:root{
+--bg:#0a0a0a;--fg:#e8e8e8;--dim:#444;--accent:#c8ff00;--accent2:#00e0ff;
+--mono:'SF Mono','Fira Code','Consolas',monospace;
+--thin:-apple-system,'Helvetica Neue','Inter',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--fg);font-family:var(--thin);overflow:hidden;-webkit-tap-highlight-color:transparent}
+body{display:flex;align-items:center;justify-content:center;position:relative}
+body::before{content:'';position:fixed;inset:0;background:
+repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(255,255,255,.02) 59px,rgba(255,255,255,.02) 60px),
+repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(255,255,255,.02) 59px,rgba(255,255,255,.02) 60px);
+pointer-events:none;z-index:0}
+
+.device{width:100%;max-width:420px;padding:48px 28px;position:relative;z-index:1;min-height:100dvh;display:flex;flex-direction:column;justify-content:center}
+
+.label{font-family:var(--mono);font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--dim);line-height:1}
+.value{font-family:var(--mono);font-size:14px;color:var(--fg);line-height:1}
+
+/* Header */
+.header{text-align:center;margin-bottom:56px}
+.product-name{font-weight:200;font-size:28px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px}
+.product-sub{font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
+
+/* Status row */
+.status-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:48px}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--dim);display:inline-block;margin-right:8px;vertical-align:middle}
+.status-dot.active{background:var(--accent);animation:pulse-dot 2s ease-in-out infinite}
+.status-dot.complete{background:var(--accent2);animation:none}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Body state */
+.body-state{text-align:center;margin-bottom:48px}
+.state-title{font-weight:200;font-size:42px;letter-spacing:.08em;margin-bottom:8px}
+.state-sub{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.15em;text-transform:uppercase}
+
+/* Metrics */
+.metrics{margin-bottom:48px}
+.metric{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.metric:last-child{border-bottom:none}
+.metric-val{font-family:var(--mono);font-size:13px;text-align:right}
+.metric-val.degraded{color:#ff4444}
+.metric-val.improving{color:#ffaa00}
+.metric-val.optimal{color:var(--accent)}
+
+/* Progress module card */
+.module-card{border:1px solid rgba(255,255,255,.06);padding:20px;margin-bottom:48px;opacity:0;display:none}
+.module-card.visible{display:block}
+.module-name{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:12px}
+.module-progress{font-weight:200;font-size:36px;margin-bottom:6px}
+.module-desc{font-size:13px;color:var(--dim);font-weight:300;line-height:1.5}
+
+/* Progress bar */
+.progress-track{height:1px;background:rgba(255,255,255,.06);margin-bottom:48px;position:relative;display:none}
+.progress-fill{height:1px;background:var(--accent);width:0%;transition:width .3s}
+
+/* Buttons */
+.actions{text-align:center;margin-top:auto;padding-top:24px}
+.btn{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;background:none;border:1px solid rgba(255,255,255,.15);color:var(--fg);padding:16px 32px;cursor:pointer;transition:all .3s;-webkit-user-select:none;user-select:none;display:inline-block;min-width:200px;position:relative;overflow:hidden}
+.btn:active{background:rgba(255,255,255,.05)}
+.btn.primary{border-color:var(--accent);color:var(--accent)}
+.btn.primary:active{background:rgba(200,255,0,.05)}
+.btn+.btn{margin-top:12px}
+.btn.hidden{display:none}
+
+/* Depleted badge */
+.depleted{font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--accent2);text-transform:uppercase;text-align:center;margin-bottom:24px;opacity:0}
+
+/* Glow effect */
+.glow{position:fixed;top:50%;left:50%;width:300px;height:300px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(200,255,0,.03),transparent 70%);pointer-events:none;opacity:0;z-index:0}
+
+/* Fade utility */
+.fade-out{opacity:0;transition:opacity .4s}
 </style>
 </head>
 <body>
-<canvas id="canvas3d"></canvas>
-<div id="ui">
-  <div id="headline"></div>
-  <div id="day-counter"></div>
-  <div class="btn-row" id="buttons"></div>
+<div class="glow" id="glow"></div>
+<div class="device" id="device">
+
+  <div class="header">
+    <div class="product-name">Deep Recovery Pad</div>
+    <div class="product-sub">M3 · M4 · M12</div>
+  </div>
+
+  <div class="status-row">
+    <div>
+      <span class="label">SYS.STATUS</span><br>
+      <span class="value" id="status-val"><span class="status-dot" id="status-dot"></span>STANDBY</span>
+    </div>
+    <div style="text-align:right">
+      <span class="label">DOSE</span><br>
+      <span class="value" id="dose-val">01 / 30</span>
+    </div>
+  </div>
+
+  <div class="body-state" id="body-state">
+    <div class="state-title" id="state-title">ENTROPY</div>
+    <div class="state-sub" id="state-sub">Internal Dissonance High</div>
+  </div>
+
+  <div class="metrics" id="metrics">
+    <div class="metric">
+      <span class="label">Sleep Debt</span>
+      <span class="metric-val degraded" id="m-sleep">CRITICAL</span>
+    </div>
+    <div class="metric">
+      <span class="label">Tissue Stress</span>
+      <span class="metric-val degraded" id="m-tissue">ELEVATED</span>
+    </div>
+    <div class="metric">
+      <span class="label">Cell Energy</span>
+      <span class="metric-val degraded" id="m-energy">DEPLETED</span>
+    </div>
+  </div>
+
+  <div class="module-card" id="module-card">
+    <div class="module-name" id="mod-name">M3 — Sleep Repair</div>
+    <div class="module-progress" id="mod-pct">0%</div>
+    <div class="module-desc" id="mod-desc">Recalibrating circadian signaling</div>
+  </div>
+
+  <div class="progress-track" id="progress-track">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+
+  <div class="depleted" id="depleted-badge">PAD CYCLE DEPLETED</div>
+
+  <div class="actions" id="actions">
+    <button class="btn primary" id="btn-start" onclick="startRecovery()">Initialize Recovery</button>
+    <button class="btn hidden" id="btn-reset" onclick="resetCycle()">Reset Cycle</button>
+    <button class="btn primary hidden" id="btn-replenish" onclick="replenish()">Replenish Pad</button>
+  </div>
+
 </div>
-<button id="gyro-btn">Enable Motion</button>
-<button id="sound-btn">♪</button>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
-(function(){
-// ─── RENDERER ───
-const canvas=document.getElementById('canvas3d');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.setSize(window.innerWidth,window.innerHeight);
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
+const $ = id => document.getElementById(id);
+const statusVal = $('status-val'), statusDot = $('status-dot'), doseVal = $('dose-val');
+const stateTitle = $('state-title'), stateSub = $('state-sub');
+const mSleep = $('m-sleep'), mTissue = $('m-tissue'), mEnergy = $('m-energy');
+const moduleCard = $('module-card'), modName = $('mod-name'), modPct = $('mod-pct'), modDesc = $('mod-desc');
+const progressTrack = $('progress-track'), progressFill = $('progress-fill');
+const btnStart = $('btn-start'), btnReset = $('btn-reset'), btnReplenish = $('btn-replenish');
+const depletedBadge = $('depleted-badge'), glow = $('glow');
 
-const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(45,window.innerWidth/window.innerHeight,.1,100);
-camera.position.set(0,0,8);
-
-window.addEventListener('resize',()=>{
-  camera.aspect=window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
-});
-
-// ─── LIGHTS ───
-scene.add(new THREE.AmbientLight(0x223355,.3));
-const keyLight=new THREE.PointLight(0x4facfe,.6,20);keyLight.position.set(3,4,5);scene.add(keyLight);
-const rimLight=new THREE.PointLight(0x00f2fe,.4,20);rimLight.position.set(-3,2,3);scene.add(rimLight);
-
-// ─── BODY (abstract silhouette from spheres) ───
-const bodyGroup=new THREE.Group();
-scene.add(bodyGroup);
-
-const bodyMat=new THREE.MeshPhysicalMaterial({color:0x8899bb,transparent:true,opacity:.15,roughness:.3,metalness:.1,clearcoat:.5,side:THREE.DoubleSide});
-
-function addPart(x,y,z,sx,sy,sz){
-  const g=new THREE.SphereGeometry(1,16,12);
-  const m=new THREE.Mesh(g,bodyMat.clone());
-  m.position.set(x,y,z);m.scale.set(sx,sy,sz);
-  bodyGroup.add(m);return m;
-}
-
-// head, neck, torso, hips, limbs
-addPart(0,2.2,0, .45,.5,.4);   // head
-addPart(0,1.7,0, .18,.2,.18);  // neck
-addPart(0,.8,0, .55,1,.35);    // torso
-addPart(0,-.4,0, .5,.4,.3);    // hips
-addPart(-.55,.3,0, .18,.7,.18);// L arm
-addPart(.55,.3,0, .18,.7,.18); // R arm
-addPart(-.25,-1.5,0, .2,.9,.2);// L leg
-addPart(.25,-1.5,0, .2,.9,.2); // R leg
-
-// ─── PAIN POINTS ───
-const painPositions=[
-  [0,2.2,0.3],   // head
-  [0,1.65,0.15],  // neck
-  [0,1.1,0.2],   // upper spine
-  [0,0.4,0.2],   // lower spine
-  [-.7,0.6,0],   // L shoulder
-  [.7,0.6,0],    // R shoulder
-  [-.3,-0.8,0],  // L hip
-  [.3,-0.8,0],   // R hip
-  [-.25,-2.2,0], // L knee
-  [.25,-2.2,0],  // R knee
+const modules = [
+  { name:'M3 — Sleep Repair', desc:'Recalibrating circadian signaling', metric:mSleep, mid:'REPAIRING', end:'RESTORED' },
+  { name:'M4 — Tissue Recovery', desc:'Reducing inflammation markers', metric:mTissue, mid:'REDUCING', end:'NOMINAL' },
+  { name:'M12 — Mitochondria Energy', desc:'Regenerating cellular ATP output', metric:mEnergy, mid:'CHARGING', end:'OPTIMAL' }
 ];
 
-const painGlows=[];
-painPositions.forEach(p=>{
-  const g=new THREE.SphereGeometry(.12,12,8);
-  const m=new THREE.MeshBasicMaterial({color:0xff4422,transparent:true,opacity:.9});
-  const mesh=new THREE.Mesh(g,m);
-  mesh.position.set(...p);
-  bodyGroup.add(mesh);
-  // outer glow
-  const g2=new THREE.SphereGeometry(.25,12,8);
-  const m2=new THREE.MeshBasicMaterial({color:0xff4422,transparent:true,opacity:.25});
-  const glow=new THREE.Mesh(g2,m2);
-  glow.position.set(...p);
-  bodyGroup.add(glow);
-  painGlows.push({core:mesh,glow,pos:p});
-});
+function startRecovery(){
+  btnStart.classList.add('hidden');
+  statusDot.classList.add('active');
+  statusVal.innerHTML = '<span class="status-dot active" id="status-dot"></span>OPTIMIZING';
+  stateTitle.textContent = 'RECOVERY';
+  stateSub.textContent = 'Modules Activating';
+  progressTrack.style.display = 'block';
+  moduleCard.classList.add('visible');
+  gsap.to(glow, {opacity:1, duration:1});
+  gsap.to(moduleCard, {opacity:1, duration:.5});
 
-// ─── PARTICLES ───
-const PCOUNT=1200;
-const pGeo=new THREE.BufferGeometry();
-const pPos=new Float32Array(PCOUNT*3);
-const pCol=new Float32Array(PCOUNT*3);
-const pVel=[];// velocity
-const pBase=[];// base organized position
+  let dose = 1;
+  const totalDuration = 18;
+  const phaseTime = totalDuration / 3;
 
-for(let i=0;i<PCOUNT;i++){
-  // random around body
-  const theta=Math.random()*Math.PI*2;
-  const phi=Math.random()*Math.PI;
-  const r=1+Math.random()*2.5;
-  const x=r*Math.sin(phi)*Math.cos(theta);
-  const y=(Math.random()-0.4)*5;
-  const z=r*Math.sin(phi)*Math.sin(theta)*.5;
-  pPos[i*3]=x;pPos[i*3+1]=y;pPos[i*3+2]=z;
-  pCol[i*3]=1;pCol[i*3+1]=.3+Math.random()*.2;pCol[i*3+2]=.1;
-  pVel.push({x:(Math.random()-.5)*.02,y:(Math.random()-.5)*.02,z:(Math.random()-.5)*.02});
-  // organized: flowing ring
-  const a=Math.PI*2*i/PCOUNT;
-  const ry=Math.sin(a*3)*.8+.5;
-  const rx=Math.cos(a)*1.2;
-  const rz=Math.sin(a)*.4;
-  pBase.push({x:rx,y:ry,z:rz});
-}
-pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
-pGeo.setAttribute('color',new THREE.BufferAttribute(pCol,3));
+  // Dose counter
+  const doseInterval = setInterval(()=>{
+    if(dose<30){dose++;doseVal.textContent=String(dose).padStart(2,'0')+' / 30'}
+  }, (totalDuration*1000)/29);
 
-const pMat=new THREE.PointsMaterial({size:.04,vertexColors:true,transparent:true,opacity:.7,blending:THREE.AdditiveBlending,depthWrite:false});
-const particles=new THREE.Points(pGeo,pMat);
-scene.add(particles);
+  // Progress bar
+  gsap.to(progressFill, {width:'100%', duration:totalDuration, ease:'none'});
 
-// ─── PAD ───
-const padGeo=new THREE.BoxGeometry(1.8,.08,1.2,1,1,1);
-const padMat=new THREE.MeshPhysicalMaterial({color:0x4facfe,transparent:true,opacity:0,emissive:0x4facfe,emissiveIntensity:.3,roughness:.2,metalness:.3,clearcoat:1});
-const pad=new THREE.Mesh(padGeo,padMat);
-pad.position.set(0,4,0);
-pad.rotation.x=-.1;
-scene.add(pad);
+  // Run modules sequentially
+  let phase = 0;
+  function runPhase(){
+    if(phase >= modules.length){clearInterval(doseInterval);finish();return}
+    const m = modules[phase];
+    modName.textContent = m.name;
+    modDesc.textContent = m.desc;
+    gsap.fromTo(moduleCard,{opacity:0},{opacity:1,duration:.4});
 
-// ─── 30-DAY RING ───
-const ringGeo=new THREE.TorusGeometry(3.5,.02,8,120);
-const ringMat=new THREE.MeshBasicMaterial({color:0x1a2a44,transparent:true,opacity:0});
-const ring=new THREE.Mesh(ringGeo,ringMat);
-ring.rotation.x=Math.PI/2;
-scene.add(ring);
+    // Animate percentage
+    let p = {v:0};
+    gsap.to(p, {v:100, duration:phaseTime, ease:'power1.inOut', onUpdate:()=>{
+      modPct.textContent = Math.round(p.v)+'%';
+    }});
 
-// ring progress arc
-const ringProgressGeo=new THREE.TorusGeometry(3.5,.035,8,120,0);
-const ringProgressMat=new THREE.MeshBasicMaterial({color:0x4facfe,transparent:true,opacity:0});
-const ringProgress=new THREE.Mesh(ringProgressGeo,ringProgressMat);
-ringProgress.rotation.x=Math.PI/2;
-scene.add(ringProgress);
+    // Metric mid-update
+    setTimeout(()=>{
+      m.metric.textContent = m.mid;
+      m.metric.className = 'metric-val improving';
+    }, phaseTime*500);
 
-// ─── STATE MACHINE ───
-let state='init'; // init, recovering, restored
-let chaos=1; // 1=chaotic, 0=organized
-let painPhase=0; // 0=red, 1=done
-let recoveryT=0;
-let dayCount=0;
-
-const headline=document.getElementById('headline');
-const buttons=document.getElementById('buttons');
-const dayCounter=document.getElementById('day-counter');
-
-function setHeadline(main,sub){
-  headline.innerHTML=main+(sub?`<span>${sub}</span>`:'');
-  gsap.to(headline,{opacity:1,duration:.8});
-}
-function hideHeadline(){gsap.to(headline,{opacity:0,duration:.5})}
-
-function showButtons(arr){
-  buttons.innerHTML='';
-  arr.forEach(b=>{
-    const el=document.createElement('button');
-    el.className='btn '+b.cls;
-    el.textContent=b.text;
-    el.addEventListener('click',b.fn);
-    buttons.appendChild(el);
-    gsap.to(el,{opacity:1,duration:.6,delay:.2});
-  });
-}
-function hideButtons(){gsap.to(buttons.children,{opacity:0,duration:.3,onComplete:()=>buttons.innerHTML=''})}
-
-// ─── AUDIO ───
-let audioCtx,heartbeatOn=false,heartGain;
-function initAudio(){
-  if(audioCtx)return;
-  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  heartGain=audioCtx.createGain();
-  heartGain.gain.value=0;
-  heartGain.connect(audioCtx.destination);
-  // heartbeat loop
-  function beat(){
-    if(!heartbeatOn)return;
-    const t=audioCtx.currentTime;
-    // lub
-    const o1=audioCtx.createOscillator();o1.type='sine';o1.frequency.value=55;
-    const g1=audioCtx.createGain();g1.gain.setValueAtTime(.3,t);g1.gain.exponentialRampToValueAtTime(.001,t+.15);
-    o1.connect(g1);g1.connect(heartGain);o1.start(t);o1.stop(t+.2);
-    // dub
-    const o2=audioCtx.createOscillator();o2.type='sine';o2.frequency.value=45;
-    const g2=audioCtx.createGain();g2.gain.setValueAtTime(.25,t+.15);g2.gain.exponentialRampToValueAtTime(.001,t+.3);
-    o2.connect(g2);g2.connect(heartGain);o2.start(t+.15);o2.stop(t+.35);
-    setTimeout(beat,900);
+    // Metric final
+    setTimeout(()=>{
+      m.metric.textContent = m.end;
+      m.metric.className = 'metric-val optimal';
+      phase++;
+      runPhase();
+    }, phaseTime*1000);
   }
-  heartbeatOn=true;
-  gsap.to(heartGain.gain,{value:.15,duration:2});
-  beat();
+  runPhase();
 }
 
-const soundBtn=document.getElementById('sound-btn');
-let soundOn=false;
-soundBtn.addEventListener('click',()=>{
-  if(!audioCtx)initAudio();
-  soundOn=!soundOn;
-  heartbeatOn=soundOn;
-  gsap.to(heartGain.gain,{value:soundOn?.15:0,duration:.5});
-  soundBtn.textContent=soundOn?'♪':'♪̸';
-  soundBtn.style.opacity=soundOn?1:.5;
-  if(soundOn&&!heartbeatOn){heartbeatOn=true;/* restart handled next cycle */}
-});
-
-// ─── GYROSCOPE ───
-let tiltX=0,tiltY=0;
-const gyroBtn=document.getElementById('gyro-btn');
-function applyGyro(){
-  window.addEventListener('deviceorientation',e=>{
-    if(e.gamma!=null)tiltY=e.gamma/90;
-    if(e.beta!=null)tiltX=(e.beta-45)/90;
-  });
-  gsap.to(gyroBtn,{opacity:0,duration:.3});
-}
-if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
-  gyroBtn.style.opacity=1;
-  gyroBtn.addEventListener('click',()=>{
-    DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')applyGyro()}).catch(()=>{});
-  });
-}else if('DeviceOrientationEvent' in window){
-  applyGyro();
+function finish(){
+  doseVal.textContent = '30 / 30';
+  statusVal.innerHTML = '<span class="status-dot complete"></span>COMPLETE';
+  stateTitle.textContent = 'RESTORED';
+  stateSub.textContent = 'All Systems Nominal';
+  gsap.to(moduleCard, {opacity:0, duration:.4, onComplete:()=>moduleCard.classList.remove('visible')});
+  gsap.to(glow, {opacity:0, duration:1});
+  gsap.to(depletedBadge, {opacity:1, duration:.6, delay:.3});
+  btnReset.classList.remove('hidden');
+  btnReplenish.classList.remove('hidden');
+  gsap.fromTo(btnReset,{opacity:0},{opacity:1,duration:.5,delay:.4});
+  gsap.fromTo(btnReplenish,{opacity:0},{opacity:1,duration:.5,delay:.6});
 }
 
-// ─── STATES ───
-function enterDepleted(){
-  state='init';chaos=1;painPhase=0;recoveryT=0;dayCount=0;
-  // reset pain colors
-  painGlows.forEach(p=>{
-    p.core.material.color.set(0xff4422);p.core.material.opacity=.9;
-    p.glow.material.color.set(0xff4422);p.glow.material.opacity=.25;
-  });
-  // reset body
-  bodyGroup.children.forEach(c=>{if(c.material&&c.material!==bodyMat)c.material.opacity=c.material===padMat?0:c.material.opacity});
-  gsap.to(bodyMat,{opacity:.15,duration:1});
-  // reset pad
-  gsap.to(padMat,{opacity:0,duration:.5});
-  pad.position.y=4;
-  // reset ring
-  gsap.to(ringMat,{opacity:0,duration:.5});
-  gsap.to(ringProgressMat,{opacity:0,duration:.5});
-  // reset particles to chaotic red
-  for(let i=0;i<PCOUNT;i++){pCol[i*3]=1;pCol[i*3+1]=.3;pCol[i*3+2]=.1;}
-  pGeo.attributes.color.needsUpdate=true;
-
-  dayCounter.style.opacity=0;
-  setHeadline('This is your body after another day.','Deep Recovery Pad');
-  showButtons([{text:'Begin Recovery',cls:'btn-primary',fn:enterRecovering}]);
+function resetCycle(){
+  btnReset.classList.add('hidden');
+  btnReplenish.classList.add('hidden');
+  progressTrack.style.display = 'none';
+  progressFill.style.width = '0%';
+  depletedBadge.style.opacity = 0;
+  statusVal.innerHTML = '<span class="status-dot"></span>STANDBY';
+  doseVal.textContent = '01 / 30';
+  stateTitle.textContent = 'ENTROPY';
+  stateSub.textContent = 'Internal Dissonance High';
+  mSleep.textContent = 'CRITICAL'; mSleep.className = 'metric-val degraded';
+  mTissue.textContent = 'ELEVATED'; mTissue.className = 'metric-val degraded';
+  mEnergy.textContent = 'DEPLETED'; mEnergy.className = 'metric-val degraded';
+  btnStart.classList.remove('hidden');
+  gsap.fromTo(btnStart,{opacity:0},{opacity:1,duration:.4});
 }
 
-const milestones=[
-  {day:1,text:'Night 1 — Quantum field calibrating...'},
-  {day:3,text:'Pain signals intercepted.'},
-  {day:7,text:'Deep tissue repair initiated.'},
-  {day:14,text:'Neural pathways reorganizing.'},
-  {day:21,text:'Cellular regeneration accelerating.'},
-  {day:28,text:'Full recovery approaching.'},
-  {day:30,text:'Recovery complete.'},
-];
-
-function enterRecovering(){
-  state='recovering';recoveryT=0;
-  hideButtons();
-  initAudio();soundOn=true;heartbeatOn=true;
-  gsap.to(heartGain.gain,{value:.15,duration:1});
-  soundBtn.textContent='♪';soundBtn.style.opacity=1;
-
-  // show ring
-  gsap.to(ringMat,{opacity:.3,duration:1});
-  gsap.to(ringProgressMat,{opacity:.8,duration:1});
-
-  // pad floats down
-  gsap.to(padMat,{opacity:.6,duration:1.5,delay:.5});
-  gsap.to(pad.position,{y:.5,duration:3,delay:.3,ease:'power2.out'});
-  gsap.to(pad.rotation,{x:0,duration:2,delay:.5});
-
-  // day counter
-  dayCounter.style.opacity=1;
-
-  setHeadline(milestones[0].text,'Quantum Enforcement Active');
+function replenish(){
+  alert('Redirecting to replenishment…');
 }
-
-function enterRestored(){
-  state='restored';
-  // pad fades (depleted)
-  gsap.to(padMat,{opacity:.1,duration:2,delay:1});
-  gsap.to(padMat,{emissiveIntensity:0,duration:2,delay:1});
-
-  setHeadline('Your body is restored.','30-day cycle complete — pad depleted');
-  showButtons([
-    {text:'Experience Again',cls:'btn-secondary',fn:enterDepleted},
-    {text:'Get Your First Pad',cls:'btn-cta',fn:()=>{}},
-  ]);
-}
-
-// ─── ANIMATION LOOP ───
-const clock=new THREE.Clock();
-
-function lerp(a,b,t){return a+(b-a)*t}
-function lerpColor(c,target,t){
-  c.r=lerp(c.r,target.r,t);c.g=lerp(c.g,target.g,t);c.b=lerp(c.b,target.b,t);
-}
-
-const colRed=new THREE.Color(0xff4422);
-const colAmber=new THREE.Color(0xffaa22);
-const colBlue=new THREE.Color(0x44aaff);
-const colWhite=new THREE.Color(0xffeedd);
-const colGold=new THREE.Color(0xffd700);
-
-function animate(){
-  requestAnimationFrame(animate);
-  const dt=clock.getDelta();
-  const t=clock.getElapsedTime();
-
-  // camera tilt from gyro
-  camera.position.x=lerp(camera.position.x,tiltY*1.5,.03);
-  camera.position.y=lerp(camera.position.y,tiltX*.8,.03);
-  camera.lookAt(0,.3,0);
-
-  // body gentle rotation
-  bodyGroup.rotation.y=Math.sin(t*.3)*.15;
-
-  // pain point pulse
-  painGlows.forEach((p,i)=>{
-    const pulse=Math.sin(t*3+i)*.5+.5;
-    p.glow.scale.setScalar(1+pulse*.4);
-  });
-
-  // RECOVERING state
-  if(state==='recovering'){
-    recoveryT+=dt/18; // 18 seconds total
-    if(recoveryT>1)recoveryT=1;
-    const progress=recoveryT;
-    chaos=1-progress;
-    dayCount=Math.floor(progress*30);
-
-    // update day counter
-    dayCounter.innerHTML=dayCount+'<small>/30</small>';
-
-    // update ring progress
-    const newRingGeo=new THREE.TorusGeometry(3.5,.035,8,120,Math.PI*2*progress);
-    ringProgress.geometry.dispose();
-    ringProgress.geometry=newRingGeo;
-
-    // pain color transition
-    painGlows.forEach(p=>{
-      let targetCol;
-      if(progress<.25)targetCol=colAmber;
-      else if(progress<.6)targetCol=colBlue;
-      else targetCol=colWhite;
-      lerpColor(p.core.material.color,targetCol,.03);
-      lerpColor(p.glow.material.color,targetCol,.03);
-      p.core.material.opacity=lerp(p.core.material.opacity,.9-.6*progress,.02);
-      p.glow.material.opacity=lerp(p.glow.material.opacity,.25-.15*progress,.02);
-    });
-
-    // body glow up
-    bodyGroup.children.forEach(c=>{
-      if(c.material&&c.material.opacity!==undefined&&c!==pad){
-        const tgt=.15+progress*.35;
-        c.material.opacity=lerp(c.material.opacity,tgt,.02);
-        c.material.emissive=c.material.emissive||new THREE.Color(0);
-        lerpColor(c.material.emissive,new THREE.Color(0x4facfe),.01*progress);
-        if(c.material.emissiveIntensity!==undefined)c.material.emissiveIntensity=lerp(c.material.emissiveIntensity||0,progress*.3,.02);
-      }
-    });
-
-    // milestones
-    const mi=milestones.filter(m=>m.day<=dayCount);
-    if(mi.length>0){
-      const cur=mi[mi.length-1];
-      if(headline.textContent!==cur.text)setHeadline(cur.text,'Quantum Enforcement Active');
-    }
-
-    if(recoveryT>=1)enterRestored();
-  }
-
-  // RESTORED body glow
-  if(state==='restored'){
-    bodyGroup.children.forEach(c=>{
-      if(c.material&&c!==pad){
-        c.material.opacity=lerp(c.material.opacity,.5,.01);
-        if(c.material.emissive)lerpColor(c.material.emissive,colGold,.005);
-      }
-    });
-    painGlows.forEach(p=>{
-      lerpColor(p.core.material.color,colGold,.01);
-      p.core.material.opacity=lerp(p.core.material.opacity,.15,.01);
-      p.glow.material.opacity=lerp(p.glow.material.opacity,.05,.01);
-    });
-  }
-
-  // ─── PARTICLES ───
-  const posArr=pGeo.attributes.position.array;
-  const colArr=pGeo.attributes.color.array;
-  for(let i=0;i<PCOUNT;i++){
-    const i3=i*3;
-    if(chaos>.01){
-      // chaotic motion
-      posArr[i3]+=pVel[i].x*(1+Math.sin(t+i)*.5)*chaos;
-      posArr[i3+1]+=pVel[i].y*(1+Math.cos(t*.7+i)*.5)*chaos;
-      posArr[i3+2]+=pVel[i].z*chaos;
-      // bounds
-      if(Math.abs(posArr[i3])>3.5)pVel[i].x*=-1;
-      if(Math.abs(posArr[i3+1])>3.5)pVel[i].y*=-1;
-      if(Math.abs(posArr[i3+2])>2)pVel[i].z*=-1;
-    }
-    // organized motion
-    const org=1-chaos;
-    if(org>.01){
-      const a=Math.PI*2*((i/PCOUNT)+t*.05);
-      const ty=Math.sin(a*3+t*.3)*1.5;
-      const tx=Math.cos(a)*1.5;
-      const tz=Math.sin(a)*.6;
-      posArr[i3]=lerp(posArr[i3],tx,.01+org*.04);
-      posArr[i3+1]=lerp(posArr[i3+1],ty,.01+org*.04);
-      posArr[i3+2]=lerp(posArr[i3+2],tz,.01+org*.04);
-    }
-    // color
-    const targetR=lerp(1,.7+Math.sin(t+i*.01)*.3,1-chaos);
-    const targetG=lerp(.3,.85+Math.sin(t*.5+i*.02)*.15,1-chaos);
-    const targetB=lerp(.1,1,1-chaos);
-    colArr[i3]=lerp(colArr[i3],targetR,.02);
-    colArr[i3+1]=lerp(colArr[i3+1],targetG,.02);
-    colArr[i3+2]=lerp(colArr[i3+2],targetB,.02);
-  }
-  pGeo.attributes.position.needsUpdate=true;
-  pGeo.attributes.color.needsUpdate=true;
-
-  // pad hover
-  if(padMat.opacity>.05){
-    pad.position.y=lerp(pad.position.y,.5,.02)+Math.sin(t*1.2)*.05;
-    pad.rotation.z=Math.sin(t*.8)*.03;
-  }
-
-  renderer.render(scene,camera);
-}
-
-// ─── START ───
-enterDepleted();
-animate();
-
-})();
 </script>
 </body>
 </html>
